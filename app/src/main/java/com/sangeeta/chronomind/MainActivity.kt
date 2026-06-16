@@ -4,25 +4,32 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.sangeeta.chronomind.ui.theme.ChronoMindTheme
+import com.sangeeta.chronomind.ui.home.HomeScreen
+import com.sangeeta.chronomind.ui.onboarding.OnboardingNavHost
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ChronoMindTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) {
-
+            OnboardingNavHost(
+                onNavigateToMain = {
+                    // later: navigate to dashboard/home graph
                 }
-            }
-        }
+            )
+
+//            HomeScreen(
+//                onCreateActivityClick = { },
+//                onActivityClick = { },
+//                onCurrentFocusClick = { },
+//                onHistoryClick = { },
+//                onInsightsClick = { },
+//                onSettingsClick = { }
+//            )
+
+
+       }
     }
 }
