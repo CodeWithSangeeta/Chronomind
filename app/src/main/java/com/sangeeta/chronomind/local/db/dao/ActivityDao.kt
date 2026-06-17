@@ -81,10 +81,6 @@ interface ActivityDao {
     @Query("UPDATE activities SET isRunning = 0")
     suspend fun stopAll()
 
-
-    // In DAO — always safe, uses entity class definition
-    @Update
-    // In Repository — use .copy() pattern
-    suspend fun updateAppearance(entity: ActivityEntity, icon: String, colorHex: String) =
-        dao.update(entity.copy(icon = icon, colorHex = colorHex))
+    @Query("UPDATE activities SET icon = :icon, colorHex = :colorHex WHERE id = :id")
+    suspend fun updateAppearance(id: Int, icon: String, colorHex: String)
 }

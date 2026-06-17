@@ -13,5 +13,7 @@ data class ActivityEntity(
     val streakDays: Int = 0,
     val lastActiveDate: String = "",
     val continueStreakOnMiss: Boolean = true,
-    val orderIndex: Int = 0
+    val orderIndex: Int = 0,
+    val icon: String = "timer",
+    val colorHex: String = "#6C63FF"
 )

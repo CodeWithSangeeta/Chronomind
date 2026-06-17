@@ -54,6 +54,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.foundation)
+    implementation(libs.androidx.ui.graphics)
 
 //    Test
     testImplementation(libs.junit)
@@ -79,6 +81,10 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+
+    //Navigation
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.navigation.compose)
 
     // Coroutines
     implementation(libs.coroutines.android)

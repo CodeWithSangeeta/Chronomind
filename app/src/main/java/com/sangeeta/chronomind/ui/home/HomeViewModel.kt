@@ -111,6 +111,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
+import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

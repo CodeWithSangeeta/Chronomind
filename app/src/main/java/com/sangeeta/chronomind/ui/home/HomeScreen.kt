@@ -1013,6 +1013,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sangeeta.chronomind.ui.components.ChronoTimerRing
+import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 import java.time.LocalTime
@@ -1452,7 +1453,7 @@ private fun EmptyActivitiesState(onAdd: () -> Unit) {
 @Composable
 private fun HomePreviewWithData() {
     val sampleActivities = listOf(
-        ActivityUiModel(1, "Deep Work",    "🧠", "#FFCC00", 15300L, 18000L, true,  12, "", true),
+        ActivityUiModel(1, "Deep Work", "🧠", "#FFCC00", 15300L, 18000L, true, 12, "", true),
         ActivityUiModel(2, "Exercise",     "🏋️", "#FF6B35", 2100L,  2700L,  false, 7,  "", true),
         ActivityUiModel(3, "Reading",      "📚", "#4ECDC4", 1200L,  1800L,  false, 3,  "", true),
     )
