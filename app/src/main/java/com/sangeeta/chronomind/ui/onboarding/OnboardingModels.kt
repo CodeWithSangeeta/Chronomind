@@ -1,79 +1,101 @@
 package com.sangeeta.chronomind.ui.onboarding
 
-enum class FocusArea(val icon: String, val label: String) {
-    STUDY("📖", "Study"),
-    EXERCISE("🏋️", "Exercise"),
-    READING("📚", "Reading"),
-    WORK("💻", "Work"),
-    MEDITATION("🪷", "Meditation"),
-    CREATIVE("🎨", "Creative Projects"),
-    GROWTH("🌱", "Personal Growth"),
-    OTHER("···", "Something Else")
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Autorenew
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Book
+import androidx.compose.material.icons.rounded.FitnessCenter
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Replay
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SelfImprovement
+import androidx.compose.material.icons.rounded.TaskAlt
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material.icons.rounded.Work
+import androidx.compose.ui.graphics.vector.ImageVector
+
+enum class FocusArea(
+    val icon: ImageVector,
+    val label: String
+) {
+    STUDY(Icons.Rounded.Book, "Study"),
+    EXERCISE(Icons.Rounded.FitnessCenter, "Exercise"),
+    READING(Icons.Rounded.Search, "Research"),
+    WORK(Icons.Rounded.Work, "Work"),
+    MEDITATION(Icons.Rounded.SelfImprovement, "Meditation"),
+    CREATIVE(Icons.Rounded.Palette, "Creative work"),
+    GROWTH(Icons.Rounded.TrendingUp, "Personal growth"),
+    OTHER(Icons.Rounded.MoreHoriz, "Other")
 }
 
-
-
 enum class AccountabilityType(
-    val icon: String,
+    val icon: ImageVector,
     val title: String,
-    val subtitle: String
 ) {
     STREAKS(
-        "🔥", "Daily streaks",
-        "Stay motivated with a daily streak counter"
+        Icons.Rounded.LocalFireDepartment,
+        "Daily streaks"
     ),
     TIME(
-        "⏱️", "Tracking my time",
-        "See exactly how much time you invest each day"
+        Icons.Rounded.Timer,
+        "Time tracking"
     ),
     PROGRESS(
-        "📊", "Seeing my progress",
-        "Visual charts and progress over weeks"
+        Icons.Rounded.BarChart,
+        "Progress tracking"
     ),
     REMINDERS(
-        "🔔", "Home screen reminders",
-        "Widget nudges so you never forget"
-    ),
-    ALL(
-        "🤍", "A little bit for everything",
-        "Use all features together"
+        Icons.Rounded.Widgets,
+        "Home screen widget"
     )
 }
 
-
 enum class CheckInStyle(
-    val icon: String,
+    val icon: ImageVector,
     val title: String,
     val subtitle: String
 ) {
     MANUAL(
-        "🤍",
-        "I decide when I've completed today.",
-        "(Manual check-in)"
+        Icons.Rounded.TaskAlt,
+        "I’ll mark my day complete",
+        "Manual check-in"
     ),
     REMINDER(
-        "🔔",
-        "Remind me to check in.",
-        "(Gentle reminders)"
+        Icons.Rounded.Notifications,
+        "Remind me to check in",
+        "Gentle reminders"
     )
 }
 
-
 enum class StreakMissChoice(
-    val icon: String,
+    val icon: ImageVector,
     val title: String,
     val subtitle: String
 ) {
     CONTINUE(
-        "🔄",
+        Icons.Rounded.Autorenew,
         "Continue my streak",
-        "Keep the streak going where you left off."
+        "Pick up where I left off"
     ),
     RESET(
-        "⏮️",
+        Icons.Rounded.Replay,
         "Reset to zero",
-        "Start fresh from 1."
+        "Start over from 1"
     )
 }
 
- enum class PreviewStatus { RUNNING, PAUSED, READY }
+enum class BubbleArrowDirection {
+    LEFT,
+    DOWN
+}
+
+enum class PreviewStatus {
+    RUNNING,
+    PAUSED,
+    READY
+}

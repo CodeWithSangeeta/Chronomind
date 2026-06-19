@@ -1,20 +1,16 @@
 package com.sangeeta.chronomind.ui.onboarding.screens
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
+import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 import com.sangeeta.chronomind.ui.onboarding.StreakMissChoice
-import com.sangeeta.chronomind.ui.theme.AuraColors
-import com.sangeeta.chronomind.ui.theme.AuraTypography
 
 @Composable
 fun StreakMissScreen(
@@ -22,7 +18,7 @@ fun StreakMissScreen(
     onSelect: (StreakMissChoice) -> Unit,
     onContinue: () -> Unit,
     currentStep: Int = 3,
-    totalSteps: Int = 8,
+    totalSteps: Int = 7,
     modifier: Modifier = Modifier
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -42,9 +38,16 @@ fun StreakMissScreen(
         buttonText = "Continue",
         onButtonClick = onContinue,
         buttonEnabled = selected != null,
-        footerText = "You can set this preference\nfor each activity later.",
+        footerText = "You can change this later for each activity.",
         currentStep = currentStep,
         totalSteps = totalSteps,
+        topContent = {
+            AuraBotBubble(
+                message = "If you miss a day, what should happen to your streak?",
+                botImageSize = 160.dp,
+                arrowDirection = BubbleArrowDirection.LEFT
+            )
+        },
         modifier = modifier
     ) {
         Column(
@@ -54,22 +57,7 @@ fun StreakMissScreen(
                 .offset(y = slideY),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuraBotBubble(
-                message = "Life happens! When you miss a day,\nhow should we handle your streak?"
-            )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Headline
-            HighlightedHeadline(
-                prefix    = "Miss a day?\nHere's how we'll\nhandle your ",
-                highlight = "streak.",
-                suffix    = ""
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Option cards
             Column(
                 modifier = Modifier
                     .weight(1f)

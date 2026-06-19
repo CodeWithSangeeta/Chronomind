@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
+import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.FocusArea
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 import com.sangeeta.chronomind.ui.theme.AuraColors
@@ -23,7 +24,7 @@ fun FocusAreaScreen(
     onToggleArea: (FocusArea) -> Unit,
     onContinue: () -> Unit,
     currentStep: Int = 0,
-    totalSteps: Int = 8,
+    totalSteps: Int = 7,
     modifier: Modifier = Modifier
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -45,6 +46,13 @@ fun FocusAreaScreen(
             buttonEnabled = selectedAreas.isNotEmpty(),
             currentStep = currentStep,
             totalSteps = totalSteps,
+            topContent = {
+                AuraBotBubble(
+                    message =  "What would you like to be more consistent with?",
+                    botImageSize = 160.dp,
+                    arrowDirection = BubbleArrowDirection.LEFT
+                )
+            },
             modifier = modifier
         ) {
         Column(
@@ -55,11 +63,6 @@ fun FocusAreaScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-   AuraBotBubble(message = "What would you like to be more consistent with?")
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Sub label
             Text(
                 text      = "Choose all that apply.",
                 style     = AuraTypography.BodySmall,
@@ -69,7 +72,6 @@ fun FocusAreaScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Grid — 2 columns
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -77,7 +79,6 @@ fun FocusAreaScreen(
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Chunk the 8 items into rows of 2
                 FocusArea.entries.chunked(2).forEach { rowItems ->
                     Row(
                         modifier            = Modifier.fillMaxWidth(),
@@ -92,7 +93,6 @@ fun FocusAreaScreen(
                                 modifier   = Modifier.weight(1f)
                             )
                         }
-                        // Fill empty slot if odd number in last row
                         if (rowItems.size == 1) {
                             Spacer(modifier = Modifier.weight(1f))
                         }

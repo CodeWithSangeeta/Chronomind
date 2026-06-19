@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
 import com.sangeeta.chronomind.ui.onboarding.AccountabilityType
+import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 
 
@@ -18,10 +19,9 @@ fun AccountabilityScreen(
     onSelect: (AccountabilityType) -> Unit,
     onContinue: () -> Unit,
     currentStep: Int = 1,
-    totalSteps: Int = 8,
+    totalSteps: Int = 7,
     modifier: Modifier = Modifier
 ) {
-    // Entrance animation
     var visible by remember { mutableStateOf(false) }
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
@@ -42,7 +42,14 @@ fun AccountabilityScreen(
         footerText = "You can change this later in settings.",
         currentStep = currentStep,
         totalSteps = totalSteps,
-        modifier = modifier
+        topContent = {
+            AuraBotBubble(
+                message = "How do you want to stay on track?",
+                botImageSize = 160.dp,
+                arrowDirection = BubbleArrowDirection.LEFT
+            )
+        },
+                modifier = modifier
     ) {
         Column(
             modifier = Modifier
@@ -51,13 +58,7 @@ fun AccountabilityScreen(
                 .offset(y = slideY),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuraBotBubble(
-                message = "How do you usually prefer\nto stay accountable?"
-            )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Option cards — single select
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -68,7 +69,6 @@ fun AccountabilityScreen(
                     AuraOptionCard(
                         icon = type.icon,
                         title = type.title,
-                        subtitle = type.subtitle,
                         isSelected = selected == type,
                         onClick = { onSelect(type) },
                         modifier = Modifier.fillMaxWidth()

@@ -35,6 +35,7 @@ fun OnboardingScaffold(
     totalSteps: Int = 8,
     footerText: String? = null,
     footerContent: @Composable (() -> Unit)? = null,
+    topContent: @Composable (() -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
@@ -87,10 +88,14 @@ fun OnboardingScaffold(
                 Spacer(modifier = Modifier.height(20.dp))
             }
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
-                content(innerPadding)
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    topContent?.invoke()
+                    content(innerPadding)
+                }
             }
         }
     }

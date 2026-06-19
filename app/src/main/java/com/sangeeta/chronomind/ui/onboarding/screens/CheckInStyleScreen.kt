@@ -2,20 +2,16 @@ package com.sangeeta.chronomind.ui.onboarding.screens
 
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
+import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.CheckInStyle
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
-import com.sangeeta.chronomind.ui.theme.AuraColors
-import com.sangeeta.chronomind.ui.theme.AuraTypography
 
 @Composable
 fun CheckInStyleScreen(
@@ -23,7 +19,7 @@ fun CheckInStyleScreen(
     onSelect: (CheckInStyle) -> Unit,
     onContinue: () -> Unit,
     currentStep: Int = 2,
-    totalSteps: Int = 8,
+    totalSteps: Int = 7,
     modifier: Modifier = Modifier
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -43,9 +39,16 @@ fun CheckInStyleScreen(
         buttonText = "Continue",
         onButtonClick = onContinue,
         buttonEnabled = selected != null,
-        footerText = "You control the app.\nThe app doesn't control you.",
+        footerText = "You can change this later in settings.",
         currentStep = currentStep,
         totalSteps = totalSteps,
+        topContent = {
+            AuraBotBubble(
+                message = "How would you like to check in each day?",
+                botImageSize = 160.dp,
+                arrowDirection = BubbleArrowDirection.LEFT
+            )
+        },
         modifier = modifier
     ) {
         Column(
@@ -55,23 +58,7 @@ fun CheckInStyleScreen(
                 .offset(y = slideY),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuraBotBubble(
-                message = "Remember, showing up matters\nfar more than perfection."
-            )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text      = "How do you want to\ncelebrate your\nconsistency here?",
-                style     = AuraTypography.DisplayLarge,
-                color     = AuraColors.TextPrimary,
-                textAlign = TextAlign.Center,
-                modifier  = Modifier.padding(horizontal = 28.dp)
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Option cards — single select
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -90,7 +77,6 @@ fun CheckInStyleScreen(
                 }
 
             }
-
         }
     }
 }
