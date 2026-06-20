@@ -1,15 +1,13 @@
 package com.sangeeta.chronomind.ui.onboarding.screens
 
-
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -43,12 +41,12 @@ fun IntroScreen(
         label = "splashSlide"
     )
 
-   LaunchedEffect(Unit) { visible = true }
+    LaunchedEffect(Unit) { visible = true }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-           .background(AuraColors.BackgroundDark)
+            .background(AuraColors.BackgroundDark)
     ) {
 
         Image(
@@ -63,12 +61,12 @@ fun IntroScreen(
                 .fillMaxSize()
                 .offset(y = slideY)
                 .graphicsLayer(alpha = alpha),
-            verticalArrangement   = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top= 36.dp, bottom = 0.dp, start = 0.dp, end = 40.dp)
+                    .padding(top = 36.dp, bottom = 0.dp, start = 0.dp, end = 40.dp)
                     .clickable(onClick = onSkip),
                 contentAlignment = Alignment.TopEnd
             ) {
@@ -78,41 +76,40 @@ fun IntroScreen(
                     color = AuraColors.TextMuted,
                 )
             }
+
             Spacer(modifier = Modifier.weight(1f))
 
             Column(
-                modifier = Modifier.padding(horizontal = 28.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding( 36.dp),
+                verticalArrangement = Arrangement.Bottom,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.height(156.dp))
                 Text(
                     text = buildAnnotatedString {
-                        append("Small actions shape\n")
+                        append("Chronomind\n")
                         withStyle(
                             SpanStyle(
-                                color      = AuraColors.YellowPrimary,
-                                fontWeight = FontWeight.Bold
+                                color = AuraColors.YellowPrimary,
+                                fontWeight = FontWeight.Medium
                             )
                         ) {
-                            append("extraordinary lives.")
+                            append("Make time for what matters.")
                         }
                     },
-                    style     = AuraTypography.DisplayLarge.copy(
-                        fontSize  = 32.sp,
-                        lineHeight = 42.sp
+                    style = AuraTypography.DisplayLarge.copy(
+                        fontSize = 32.sp,
+                        lineHeight = 38.sp,
+                        fontWeight = FontWeight.Bold
                     ),
-                    color     = AuraColors.TextPrimary
-                )
-
-                Text(
-                    text  = "Track what matters. Show up\nconsistently. Build a life you're proud of.",
-                    style = AuraTypography.BodyMedium,
-                    color = AuraColors.TextSecondary,
+                    color = AuraColors.TextPrimary,
                     textAlign = TextAlign.Center
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.weight(0.4f))
 
             AuraCTAButton(
                 text    = "Get Started",

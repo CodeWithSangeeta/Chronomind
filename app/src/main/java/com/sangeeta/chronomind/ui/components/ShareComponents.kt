@@ -1,17 +1,17 @@
 package com.sangeeta.chronomind.ui.components
 
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.sangeeta.chronomind.R
+
 
 @Composable
 fun OnboardingProgressBar(
@@ -70,55 +76,63 @@ fun OnboardingProgressBar(
 }
 
 
-
 @Composable
 fun AuraBotBubble(
     message: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    botImageSize: Dp = 200.dp,
 ) {
     Row(
-        modifier = modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.Start,
     ) {
-        Box(
+        Image(
+            painter = painterResource(id = R.drawable.bot_img),
+            contentDescription = "Bot Avatar",
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            AuraColors.YellowSoft,
-                            AuraColors.YellowPrimary.copy(alpha = 0.6f)
-                        )
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "✦",
-                color = AuraColors.TextOnYellow,
-                style = AuraTypography.LabelMedium
-            )
-        }
+                .height(botImageSize)
+                .align(Alignment.Top),
+            contentScale = ContentScale.Fit,
+        )
 
         Box(
             modifier = Modifier
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 4.dp,
-                        topEnd = 14.dp,
-                        bottomStart = 14.dp,
-                        bottomEnd = 14.dp
-                    )
-                )
-                .background(AuraColors.SurfaceCardLight)
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .align(Alignment.CenterVertically)
+                .padding(start = 4.dp, top = (botImageSize * 0.10f))
+                .widthIn(max = 260.dp)
+                .drawBehind {
+                    val w = size.width
+                    val h = size.height
+                    val r = 38f
+                    val arrowY = 52f
+
+                    val path = Path().apply {
+                        moveTo(r, 0f)
+                        lineTo(w - r, 0f)
+                        quadraticTo(w, 0f, w, r)
+                        lineTo(w, h - r)
+                        quadraticTo(w, h, w - r, h)
+                        lineTo(r, h)
+                        quadraticTo(0f, h, 0f, h - r)
+                        lineTo(0f, arrowY + 18f)
+                        lineTo(-20f, arrowY)
+                        lineTo(0f, arrowY - 18f)
+                        lineTo(0f, r)
+                        quadraticTo(0f, 0f, r, 0f)
+                        close()
+                    }
+                    drawPath(path = path, color = Color(0xFF1E1E1E))
+                }
+                .padding(start = 20.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = message,
-                color = AuraColors.TextPrimary,
-                style = AuraTypography.BodyMedium
+                color = Color.White.copy(alpha = 0.95f),
+                fontSize = 14.sp,
+                textAlign = TextAlign.Start
             )
         }
     }
@@ -126,45 +140,27 @@ fun AuraBotBubble(
 
 
 @Composable
-fun HighlightedHeadline(
-    prefix: String,
-    highlight: String,
-    suffix: String = "",
-    modifier: Modifier = Modifier
-) {
-    androidx.compose.foundation.text.BasicText(
-        text = buildAnnotatedString {
-            append(prefix)
-            pushStyle(
-                androidx.compose.ui.text.SpanStyle(
-                    color = AuraColors.YellowPrimary,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                )
-            )
-            append(highlight)
-            pop()
-            append(suffix)
-        },
-        style = AuraTypography.DisplayLarge.copy(
-            color = AuraColors.TextPrimary,
-            textAlign = TextAlign.Center
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-    )
-}
-
-
-@Composable
 fun AuraOptionCard(
-    icon: String,
+    icon: ImageVector,
     title: String,
     subtitle: String = "",
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
+    val iconTint = if (isSelected) {
+        AuraColors.YellowPrimary
+    } else {
+        AuraColors.TextSecondary
+    }
+
+    val textColor = if (isSelected) {
+        AuraColors.TextPrimary
+    } else {
+        AuraColors.TextPrimary.copy(alpha = 0.92f)
+    }
+
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) AuraColors.CardBorderSelected
         else  AuraColors.CardBorderDefault,
@@ -181,7 +177,7 @@ fun AuraOptionCard(
 
     Box(
         modifier = modifier
-            .height(80.dp)
+            .height(90.dp)
             .shadow(
                 elevation = if (isSelected) 12.dp else 0.dp,
                 shape = RoundedCornerShape(14.dp),
@@ -214,7 +210,12 @@ fun AuraOptionCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text(text = icon, style = AuraTypography.HeadlineMedium)
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = iconTint,
+                modifier = Modifier.size(32.dp)
+            )
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -222,7 +223,7 @@ fun AuraOptionCard(
                     fontStyle = FontStyle.Normal,
                     fontSize = 16.sp,
                     style = AuraTypography.TitleMedium,
-                    color = AuraColors.TextPrimary
+                    color = textColor
                 )
 
                 Spacer(modifier =Modifier.height(4.dp))
@@ -242,12 +243,24 @@ fun AuraOptionCard(
 
 @Composable
 fun FocusAreaCard(
-    icon: String,
+    icon: ImageVector,
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val iconTint = if (isSelected) {
+        AuraColors.YellowPrimary
+    } else {
+        AuraColors.TextSecondary
+    }
+
+    val textColor = if (isSelected) {
+        AuraColors.TextPrimary
+    } else {
+        AuraColors.TextPrimary.copy(alpha = 0.92f)
+    }
+
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) AuraColors.CardBorderSelected
         else AuraColors.CardBorderDefault,
@@ -296,11 +309,16 @@ fun FocusAreaCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(text = icon, style = AuraTypography.DisplayMedium)
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(32.dp)
+            )
             Text(
                 text = label,
                 style = AuraTypography.LabelMedium,
-                color = AuraColors.TextPrimary
+                color = textColor
             )
         }
     }
@@ -333,7 +351,6 @@ fun TimerCircle(
             val startAngle  = -90f
             val sweepAngle  = 360f * animProgress
 
-            // 1. Track ring
             drawArc(
                 color       = AuraColors.TimerTrack,
                 startAngle  = 0f,
@@ -344,7 +361,6 @@ fun TimerCircle(
                 style       = Stroke(width = stroke, cap = StrokeCap.Round)
             )
 
-            // 2. Glow arc (wider, low opacity)
             if (sweepAngle > 0f) {
                 drawArc(
                     brush       = Brush.sweepGradient(
@@ -363,7 +379,6 @@ fun TimerCircle(
                 )
             }
 
-            // 3. Sharp progress arc on top
             if (sweepAngle > 0f) {
                 drawArc(
                     brush       = Brush.sweepGradient(
@@ -382,7 +397,6 @@ fun TimerCircle(
             }
         }
 
-        // Timer text in center
         Text(
             text  = timerText,
             style = AuraTypography.TimerDisplay,
@@ -416,7 +430,6 @@ fun AuraCTAButton(
             .clip(RoundedCornerShape(52.dp))
             .background(bgColor)
             .clickable(enabled = enabled, onClick = onClick),
-          //  .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center
     ) {
             Text(
