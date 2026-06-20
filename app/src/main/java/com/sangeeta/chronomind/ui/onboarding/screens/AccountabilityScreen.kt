@@ -9,14 +9,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
 import com.sangeeta.chronomind.ui.onboarding.AccountabilityType
-import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 
 
 @Composable
 fun AccountabilityScreen(
-    selected: AccountabilityType?,
-    onSelect: (AccountabilityType) -> Unit,
+    selectedTypes: Set<AccountabilityType>,
+    onToggleType: (AccountabilityType) -> Unit,
     onContinue: () -> Unit,
     currentStep: Int = 1,
     totalSteps: Int = 7,
@@ -38,7 +37,7 @@ fun AccountabilityScreen(
     OnboardingScaffold(
         buttonText = "Continue",
         onButtonClick = onContinue,
-        buttonEnabled = selected != null,
+        buttonEnabled = selectedTypes.isNotEmpty(),
         footerText = "You can change this later in settings.",
         currentStep = currentStep,
         totalSteps = totalSteps,
@@ -46,7 +45,6 @@ fun AccountabilityScreen(
             AuraBotBubble(
                 message = "How do you want to stay on track?",
                 botImageSize = 160.dp,
-                arrowDirection = BubbleArrowDirection.LEFT
             )
         },
                 modifier = modifier
@@ -69,8 +67,8 @@ fun AccountabilityScreen(
                     AuraOptionCard(
                         icon = type.icon,
                         title = type.title,
-                        isSelected = selected == type,
-                        onClick = { onSelect(type) },
+                        isSelected = type in selectedTypes,
+                        onClick = { onToggleType(type) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

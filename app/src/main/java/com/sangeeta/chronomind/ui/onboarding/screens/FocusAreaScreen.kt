@@ -2,8 +2,6 @@ package com.sangeeta.chronomind.ui.onboarding.screens
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,7 +10,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
-import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.FocusArea
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 import com.sangeeta.chronomind.ui.theme.AuraColors
@@ -50,7 +47,6 @@ fun FocusAreaScreen(
                 AuraBotBubble(
                     message =  "What would you like to be more consistent with?",
                     botImageSize = 160.dp,
-                    arrowDirection = BubbleArrowDirection.LEFT
                 )
             },
             modifier = modifier
@@ -75,7 +71,6 @@ fun FocusAreaScreen(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {

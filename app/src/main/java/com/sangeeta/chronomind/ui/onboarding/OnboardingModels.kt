@@ -89,11 +89,6 @@ enum class StreakMissChoice(
     )
 }
 
-enum class BubbleArrowDirection {
-    LEFT,
-    DOWN
-}
-
 enum class PreviewStatus {
     RUNNING,
     PAUSED,

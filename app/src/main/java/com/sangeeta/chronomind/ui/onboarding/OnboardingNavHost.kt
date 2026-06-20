@@ -10,7 +10,6 @@ import com.sangeeta.chronomind.ui.onboarding.screens.AccountabilityScreen
 import com.sangeeta.chronomind.ui.onboarding.screens.CheckInStyleScreen
 import com.sangeeta.chronomind.ui.onboarding.screens.FocusAreaScreen
 import com.sangeeta.chronomind.ui.onboarding.screens.MeetAuraScreen
-import com.sangeeta.chronomind.ui.onboarding.screens.ReadyScreen
 import com.sangeeta.chronomind.ui.onboarding.screens.SpaceSummaryScreen
 import com.sangeeta.chronomind.ui.onboarding.screens.StreakMissScreen
 import com.sangeeta.chronomind.ui.onboarding.screens.TimerPreviewScreen
@@ -53,15 +52,15 @@ fun OnboardingNavHost(
             onToggleArea = {area -> viewModel.toggleFocusArea(area)},
             onContinue = { viewModel.nextStep() },
             currentStep = 0,
-            totalSteps = 8
+            totalSteps = 7
         )
 
         3 -> AccountabilityScreen(
-            selected = state.selectedAccountability,
-            onSelect ={ type -> viewModel.selectAccountability(type)},
+            selectedTypes = state.selectedAccountabilityTypes,
+            onToggleType = {type -> viewModel.toggleAccountability(type)},
             onContinue = { viewModel.nextStep() },
             currentStep = 1,
-            totalSteps = 8
+            totalSteps = 7
         )
 
         4 -> CheckInStyleScreen(
@@ -69,7 +68,7 @@ fun OnboardingNavHost(
             onSelect = { style -> viewModel.selectCheckInStyle(style) },
             onContinue = { viewModel.nextStep() },
             currentStep = 2,
-            totalSteps = 8
+            totalSteps = 7
         )
 
         5 -> StreakMissScreen(
@@ -77,33 +76,29 @@ fun OnboardingNavHost(
             onSelect = { choice -> viewModel.selectStreakMissChoice(choice)},
             onContinue = { viewModel.nextStep() },
             currentStep = 3,
-            totalSteps = 8
+            totalSteps = 7
         )
 
         6 -> TimerPreviewScreen(
             onContinue = { viewModel.nextStep() },
             currentStep = 4,
-            totalSteps = 8
+            totalSteps = 7
         )
 
         7 -> WidgetPreviewScreen(
             onContinue = { viewModel.nextStep() },
             currentStep = 5,
-            totalSteps = 8
+            totalSteps = 7
         )
 
         8 -> SpaceSummaryScreen(
             focusAreas = viewModel.getFocusAreaLabels(),
-            accountabilityLabel = viewModel.getAccountabilityLabel(),
+            accountabilityLabel = viewModel.getAccountabilityLabels(),
             checkInLabel = viewModel.getCheckInLabel(),
             streakMissLabel = viewModel.getStreakMissLabel(),
-            onCreateSpace = { viewModel.nextStep() },
+            onCreateSpace = { viewModel.finishOnboarding() },
             currentStep = 6,
-            totalSteps = 8
-        )
-
-        9 -> ReadyScreen(
-            onCreateMySpace = { viewModel.finishOnboarding() }
+            totalSteps = 7
         )
 
         else -> IntroScreen(

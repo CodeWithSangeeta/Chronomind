@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
-import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.CheckInStyle
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 
@@ -46,7 +45,6 @@ fun CheckInStyleScreen(
             AuraBotBubble(
                 message = "How would you like to check in each day?",
                 botImageSize = 160.dp,
-                arrowDirection = BubbleArrowDirection.LEFT
             )
         },
         modifier = modifier
@@ -75,7 +73,6 @@ fun CheckInStyleScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-
             }
         }
     }

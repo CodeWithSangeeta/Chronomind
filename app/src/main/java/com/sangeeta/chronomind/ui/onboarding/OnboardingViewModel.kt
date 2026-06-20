@@ -56,9 +56,12 @@ class OnboardingViewModel @Inject constructor(
             current.copy(selectedFocusAreas = updated)
         }
     }
-
-    fun selectAccountability(type: AccountabilityType) {
-        _state.update { it.copy(selectedAccountability = type) }
+    fun toggleAccountability(type: AccountabilityType) {
+        _state.update { current ->
+            val updated = current.selectedAccountabilityTypes.toMutableSet()
+            if (type in updated) updated.remove(type) else updated.add(type)
+            current.copy(selectedAccountabilityTypes = updated)
+        }
     }
 
     fun selectCheckInStyle(style: CheckInStyle) {
@@ -72,8 +75,8 @@ class OnboardingViewModel @Inject constructor(
     fun getFocusAreaLabels(): List<String> =
         _state.value.selectedFocusAreas.map { it.label }
 
-    fun getAccountabilityLabel(): String =
-        _state.value.selectedAccountability?.title ?: "Not selected"
+    fun getAccountabilityLabels(): List<String> =
+        _state.value.selectedAccountabilityTypes.map { it.title }
 
     fun getCheckInLabel(): String =
         _state.value.selectedCheckInStyle?.title ?: "Not selected"
@@ -81,11 +84,14 @@ class OnboardingViewModel @Inject constructor(
     fun getStreakMissLabel(): String =
         _state.value.selectedStreakMissChoice?.title ?: "Not selected"
 
-      fun finishOnboarding() {
+   fun finishOnboarding() {
         viewModelScope.launch {
             val current = _state.value
             onboardingRepo.saveOnboardingResult(
-                name           = "",                  accountability = current.selectedAccountability?.name  ?: "",
+                name           = "",
+                accountability = current.selectedAccountabilityTypes
+                    .map { it.name }
+                    .joinToString(","),
                 checkIn        = current.selectedCheckInStyle?.name    ?: "",
                 streakMiss     = current.selectedStreakMissChoice?.name ?: ""
             )
@@ -112,7 +118,6 @@ class OnboardingViewModel @Inject constructor(
             }
 
             _state.update { it.copy(isFinished = true) }
-
             _navEvent.send(OnboardingNavEvent.NavigateToMain)
         }
     }

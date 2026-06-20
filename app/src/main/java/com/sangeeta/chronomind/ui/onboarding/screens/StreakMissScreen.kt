@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.sangeeta.chronomind.ui.components.*
-import com.sangeeta.chronomind.ui.onboarding.BubbleArrowDirection
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 import com.sangeeta.chronomind.ui.onboarding.StreakMissChoice
 
@@ -44,8 +43,7 @@ fun StreakMissScreen(
         topContent = {
             AuraBotBubble(
                 message = "If you miss a day, what should happen to your streak?",
-                botImageSize = 160.dp,
-                arrowDirection = BubbleArrowDirection.LEFT
+                botImageSize = 160.dp
             )
         },
         modifier = modifier
@@ -75,8 +73,6 @@ fun StreakMissScreen(
                     )
                 }
             }
-
-
         }
     }
 }
