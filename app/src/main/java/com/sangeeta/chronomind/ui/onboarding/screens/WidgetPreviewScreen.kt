@@ -29,7 +29,7 @@ import com.sangeeta.chronomind.ui.theme.AuraTypography
 fun WidgetPreviewScreen(
     onContinue: () -> Unit,
     currentStep: Int = 5,
-    totalSteps: Int  = 8,
+    totalSteps: Int  = 7,
     modifier: Modifier = Modifier
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -62,6 +62,12 @@ fun WidgetPreviewScreen(
         onButtonClick = onContinue,
         currentStep = currentStep,
         totalSteps = totalSteps,
+        topContent = {
+            AuraBotBubble(
+                message = "Add a widget to see your progress without opening the app.",
+                botImageSize = 160.dp
+            )
+        },
         modifier = modifier
     ) {
         Column(
@@ -72,25 +78,17 @@ fun WidgetPreviewScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuraBotBubble(
-                message = "Stay connected to your\nintentions without even\nopening the app."
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Widget previews column
             Column(
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
                     .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Small + Medium widgets side by side
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Small widget
+
                     WidgetCard(
                         label    = "Small Widget",
                         modifier = Modifier.weight(1f)
@@ -186,7 +184,7 @@ fun WidgetPreviewScreen(
                     }
                 }
             }
-        }
+       }
     }
 }
 

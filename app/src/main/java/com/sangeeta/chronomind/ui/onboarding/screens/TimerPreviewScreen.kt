@@ -17,16 +17,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.sangeeta.chronomind.ui.components.*
 import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 import com.sangeeta.chronomind.ui.onboarding.PreviewStatus
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 
-// Mock activity data just for preview
+
 private data class PreviewActivity(
     val name: String,
     val time: String,
@@ -44,7 +42,7 @@ private val previewActivities = listOf(
 fun TimerPreviewScreen(
     onContinue: () -> Unit,
     currentStep: Int = 4,
-    totalSteps: Int  = 8,
+    totalSteps: Int  = 7,
     modifier: Modifier = Modifier
 ) {
     var visible by remember { mutableStateOf(false) }
@@ -77,6 +75,12 @@ fun TimerPreviewScreen(
         onButtonClick = onContinue,
         currentStep = currentStep,
         totalSteps = totalSteps,
+        topContent = {
+            AuraBotBubble(
+                message = "You can pause, resume, or switch activities anytime",
+                botImageSize = 160.dp
+            )
+        },
         modifier = modifier
     ) {
         Column(
@@ -87,13 +91,6 @@ fun TimerPreviewScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AuraBotBubble(
-                message = "Your progress, your rules.\nPause, resume, and switch tasks\nwhenever life happens without\nlosing a single second."
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Activity timer cards list
             Column(
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
@@ -161,8 +158,7 @@ private fun ActivityTimerCard(
             )
             .border(
                 width = if (status == PreviewStatus.RUNNING) 1.5.dp else 1.dp,
-                color = if (status == PreviewStatus.RUNNING) AuraColors.CardBorderSelected
-                else AuraColors.CardBorderDefault,
+                color =  AuraColors.CardBorderDefault,
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(horizontal = 16.dp, vertical = 14.dp)

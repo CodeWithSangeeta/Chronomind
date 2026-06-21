@@ -12,26 +12,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-//@Module
-//@InstallIn(SingletonComponent::class)
-//object DataModule {
-//
-//    @Provides
-//    @Singleton
-//    fun provideDatabase(@ApplicationContext context: Context): ChronoDatabase =
-//        Room.databaseBuilder(
-//            context,
-//            ChronoDatabase::class.java,
-//            "chrono_db"
-//        ).build()
-//
-//    @Provides
-//    @Singleton
-//    fun provideActivityDao(db: ChronoDatabase): ActivityDao = db.activityDao()
-//}
-
-
-
 @Module
 @InstallIn(SingletonComponent::class)
 object DataModule {
@@ -40,7 +20,7 @@ object DataModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): ChronoDatabase =
         Room.databaseBuilder(context, ChronoDatabase::class.java, "chronodb")
-            .addMigrations(MIGRATION_1_2)   // ← safe migration
+            .addMigrations(MIGRATION_1_2)
             .build()
 
     @Provides

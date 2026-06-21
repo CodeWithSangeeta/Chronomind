@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.sangeeta.chronomind.ui.main.MainNavHost
 import com.sangeeta.chronomind.ui.onboarding.OnboardingNavHost
 import com.sangeeta.chronomind.repository.OnboardingRepository
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,7 +16,7 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject
-    lateinit var onboardingRepository: OnboardingRepository  // ✅ Hilt injects this
+    lateinit var onboardingRepository: OnboardingRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,17 +25,15 @@ class MainActivity : ComponentActivity() {
             val isDone by onboardingRepository.isOnboardingComplete
                 .collectAsStateWithLifecycle(initialValue = false)
 
-            if (isDone) {
-                MainNavHost()
-            } else {
-                OnboardingNavHost(
-                    onNavigateToMain = {
-                        // State is driven by DataStore; recompose handles navigation
-                    }
-                )
+
+            OnboardingNavHost(
+                onNavigateToMain = {
+                    // State is driven by DataStore; recompose handles navigation
+                }
+            )
 
 
-            }
+
         }
     }
 }

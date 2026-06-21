@@ -56,6 +56,10 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.ui)
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.ui.graphics)
 
 //    Test
     testImplementation(libs.junit)
