@@ -82,14 +82,15 @@ enum class ActivityIconOption(
 
 enum class ActivityColorOption(
     val label: String,
-    val color: Color
+    val color: Color,
+    val hex: String
 ) {
-    AMBER("Amber", Color(0xFFF6C445)),
-    ORANGE("Orange", Color(0xFFF08A13)),
-    RED("Red", Color(0xFFE04B3F)),
-    PINK("Pink", Color(0xFFD93B8A)),
-    PURPLE("Purple", Color(0xFF8D49D7)),
-    BLUE("Blue", Color(0xFF2F7DE1)),
-    CYAN("Cyan", Color(0xFF24AFC8)),
-    GREEN("Green", Color(0xFF4AA84F))
+    AMBER("Amber", Color(0xFFF6C445), "#F6C445"),
+    ORANGE("Orange", Color(0xFFF08A13), "#F08A13"),
+    RED("Red", Color(0xFFE04B3F), "#E04B3F"),
+    PINK("Pink", Color(0xFFD93B8A), "#D93B8A"),
+    PURPLE("Purple", Color(0xFF8D49D7), "#8D49D7"),
+    BLUE("Blue", Color(0xFF2F7DE1), "#2F7DE1"),
+    CYAN("Cyan", Color(0xFF24AFC8), "#24AFC8"),
+    GREEN("Green", Color(0xFF4AA84F), "#4AA84F")
 }

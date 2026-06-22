@@ -1,9 +1,8 @@
 package com.sangeeta.chronomind.ui.model
 
-/**
- * UI-layer representation of an activity.
- * Converted from ActivityEntity in the ViewModel.
- */
+import kotlin.collections.isNotEmpty
+
+
 data class ActivityUiModel(
     val id:               Int,
     val name:             String,
@@ -35,4 +34,26 @@ data class ActivityUiModel(
             elapsedSeconds > 0L -> "Paused"
             else -> "Ready"
         }
+}
+
+
+
+
+
+
+data class AllActivitiesUiState(
+    val isLoading: Boolean = true,
+    val searchQuery: String = "",
+    val selectedSort: ActivitySortOption = ActivitySortOption.RECENTLY_USED,
+    val activities: List<ActivityUiModel> = emptyList(),
+    val filteredActivities: List<ActivityUiModel> = emptyList()
+) {
+    val isEmpty: Boolean = !isLoading && activities.isEmpty()
+    val isSearchEmpty: Boolean = !isLoading && activities.isNotEmpty() && filteredActivities.isEmpty()
+}
+
+enum class ActivitySortOption(val label: String) {
+    RECENTLY_USED("Recently used"),
+    RECENTLY_ADDED("Recently added"),
+    A_TO_Z("A–Z")
 }
