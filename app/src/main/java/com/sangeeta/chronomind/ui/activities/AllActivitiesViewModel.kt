@@ -193,97 +193,212 @@
 
 
 
+//package com.sangeeta.chronomind.ui.activities
+//
+//import androidx.lifecycle.ViewModel
+//import androidx.lifecycle.viewModelScope
+//import com.sangeeta.chronomind.repository.ActivityRepository
+//import com.sangeeta.chronomind.ui.model.ActivitySortOption
+//import com.sangeeta.chronomind.ui.model.AllActivitiesUiState
+//import dagger.hilt.android.lifecycle.HiltViewModel
+//import kotlinx.coroutines.flow.*
+//import kotlinx.coroutines.launch
+//import javax.inject.Inject
+//import com.sangeeta.chronomind.local.db.entity.ActivityEntity
+//import com.sangeeta.chronomind.ui.mapper.toUiModel
+//
+//import com.sangeeta.chronomind.ui.model.ActivityUiModel
+//
+//import kotlinx.coroutines.flow.MutableStateFlow
+//import kotlinx.coroutines.flow.StateFlow
+//import kotlinx.coroutines.flow.combine
+//import kotlinx.coroutines.flow.stateIn
+//import kotlinx.coroutines.flow.SharingStarted
+//
+//@HiltViewModel
+//class AllActivitiesViewModel @Inject constructor(
+//    private val activityRepository: ActivityRepository
+//) : ViewModel() {
+//
+//    private val _searchQuery  = MutableStateFlow("")
+//    private val _sortOption   = MutableStateFlow(ActivitySortOption.RECENTLY_USED)
+//
+//    val uiState: StateFlow<AllActivitiesUiState> = combine(
+//        activityRepository.observeAll(),
+//        _searchQuery,
+//        _sortOption
+//    ) { entities: List<ActivityEntity>, query: String, sort: ActivitySortOption ->
+//        val all = entities.map { entity -> entity.toUiModel() }
+//
+//        val filtered = all
+//            .filter { activity ->
+//                query.isBlank() || activity.name.contains(query.trim(), ignoreCase = true)
+//            }
+//            .let { list: List<ActivityUiModel> ->
+//                when (sort) {
+//                    ActivitySortOption.RECENTLY_USED  -> {
+//                        list.sortedByDescending { activity ->
+//                            lastUsedWeight(activity.lastActiveDate)
+//                        }
+//                    }
+//                    ActivitySortOption.RECENTLY_ADDED -> {
+//                        list.sortedByDescending { activity -> activity.id }
+//                    }
+//                    ActivitySortOption.A_TO_Z -> {
+//                        list.sortedBy { activity -> activity.name.lowercase() }
+//                    }
+//                }
+//            }
+//
+//        AllActivitiesUiState(
+//            isLoading = false,
+//            activities = all,
+//            filteredActivities = filtered,
+//            searchQuery = query,
+//            selectedSort = sort
+//        )
+//    }.stateIn(
+//        scope         = viewModelScope,
+//        started       = SharingStarted.WhileSubscribed(5_000),
+//        initialValue  = AllActivitiesUiState(isLoading = true)
+//    )
+//
+//    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
+//    fun onSortSelected(option: ActivitySortOption) { _sortOption.value = option }
+//
+//    fun onDeleteActivity(activityId: Int) {
+//        viewModelScope.launch {
+//            val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
+//            activityRepository.delete(entity)
+//        }
+//    }
+//
+//    fun onStartActivity(activityId: Int) {
+//        viewModelScope.launch {
+//            activityRepository.stopAll()
+//            val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
+//            activityRepository.updateTimer(activityId, entity.elapsedSeconds, running = true)
+//        }
+//    }
+//
+//    private fun lastUsedWeight(label: String): Int = when (label.lowercase()) {
+//        "today"     -> 4
+//        "yesterday" -> 3
+//        else        -> 0
+//    }
+//}
+
+
+
+
 package com.sangeeta.chronomind.ui.activities
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.ui.model.ActivitySortOption
+import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.model.AllActivitiesUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.sangeeta.chronomind.local.db.entity.ActivityEntity
-import com.sangeeta.chronomind.ui.mapper.toUiModel
-
-import com.sangeeta.chronomind.ui.model.ActivityUiModel
-
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class AllActivitiesViewModel @Inject constructor(
     private val activityRepository: ActivityRepository
 ) : ViewModel() {
 
-    private val _searchQuery  = MutableStateFlow("")
-    private val _sortOption   = MutableStateFlow(ActivitySortOption.RECENTLY_USED)
+    private val _uiState = MutableStateFlow(AllActivitiesUiState(isLoading = true))
+    val uiState: StateFlow<AllActivitiesUiState> = _uiState.asStateFlow()
 
-    val uiState: StateFlow<AllActivitiesUiState> = combine(
-        activityRepository.observeAll(),
-        _searchQuery,
-        _sortOption
-    ) { entities: List<ActivityEntity>, query: String, sort: ActivitySortOption ->
-        val all = entities.map { entity -> entity.toUiModel() }
-
-        val filtered = all
-            .filter { activity ->
-                query.isBlank() || activity.name.contains(query.trim(), ignoreCase = true)
-            }
-            .let { list: List<ActivityUiModel> ->
-                when (sort) {
-                    ActivitySortOption.RECENTLY_USED  -> {
-                        list.sortedByDescending { activity ->
-                            lastUsedWeight(activity.lastActiveDate)
-                        }
-                    }
-                    ActivitySortOption.RECENTLY_ADDED -> {
-                        list.sortedByDescending { activity -> activity.id }
-                    }
-                    ActivitySortOption.A_TO_Z -> {
-                        list.sortedBy { activity -> activity.name.lowercase() }
-                    }
+    init {
+        viewModelScope.launch {
+            activityRepository.observeAll().collect { activities ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        activities = activities.map { entity -> entity.toUiModel() }
+                    )
                 }
+                applyFilters()
             }
+        }
+    }
 
-        AllActivitiesUiState(
-            isLoading = false,
-            activities = all,
-            filteredActivities = filtered,
-            searchQuery = query,
-            selectedSort = sort
-        )
-    }.stateIn(
-        scope         = viewModelScope,
-        started       = SharingStarted.WhileSubscribed(5_000),
-        initialValue  = AllActivitiesUiState(isLoading = true)
-    )
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+        applyFilters()
+    }
 
-    fun onSearchQueryChange(query: String) { _searchQuery.value = query }
-    fun onSortSelected(option: ActivitySortOption) { _sortOption.value = option }
+    fun onSortSelected(sortOption: ActivitySortOption) {
+        _uiState.update { it.copy(selectedSort = sortOption) }
+        applyFilters()
+    }
 
     fun onDeleteActivity(activityId: Int) {
         viewModelScope.launch {
-            val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
+            val entity = activityRepository.observeById(activityId).first() ?: return@launch
             activityRepository.delete(entity)
         }
     }
 
     fun onStartActivity(activityId: Int) {
         viewModelScope.launch {
-            activityRepository.stopAll()
-            val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
-            activityRepository.updateTimer(activityId, entity.elapsedSeconds, running = true)
+            val entity = activityRepository.observeById(activityId).first() ?: return@launch
+            activityRepository.startActivity(entity)
         }
     }
 
-    private fun lastUsedWeight(label: String): Int = when (label.lowercase()) {
-        "today"     -> 4
-        "yesterday" -> 3
-        else        -> 0
+    private fun applyFilters() {
+        _uiState.update { current ->
+            val filtered = current.activities
+                .filter { activity ->
+                    current.searchQuery.isBlank() ||
+                            activity.name.contains(current.searchQuery.trim(), ignoreCase = true)
+                }
+                .let { list ->
+                    when (current.selectedSort) {
+                        ActivitySortOption.RECENTLY_USED ->
+                            list.sortedByDescending { sortWeightForLastUsed(it.lastActiveDate) }
+                        ActivitySortOption.RECENTLY_ADDED ->
+                            list.sortedByDescending { it.id }
+                        ActivitySortOption.A_TO_Z ->
+                            list.sortedBy { it.name.lowercase() }
+                    }
+                }
+
+            current.copy(filteredActivities = filtered)
+        }
+    }
+
+    private fun sortWeightForLastUsed(lastUsed: String): Int {
+        return when (lastUsed.lowercase()) {
+            "today" -> 4
+            "yesterday" -> 3
+            "2 days ago" -> 2
+            "3 days ago" -> 1
+            else -> 0
+        }
+    }
+
+    private fun ActivityEntity.toUiModel(): ActivityUiModel {
+        return ActivityUiModel(
+            id = id,
+            name = name,
+            icon = icon,
+            colorHex = colorHex,
+            elapsedSeconds = elapsedSeconds,
+            targetSeconds = targetMinutes * 60L,
+            isRunning = isRunning,
+            streakDays = streakDays,
+            lastActiveDate = lastActiveDate,
+            continueOnMiss = continueStreakOnMiss
+        )
     }
 }
