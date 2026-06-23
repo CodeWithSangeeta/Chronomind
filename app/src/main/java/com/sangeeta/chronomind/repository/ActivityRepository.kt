@@ -26,15 +26,19 @@ package com.sangeeta.chronomind.repository
 
 
 import com.sangeeta.chronomind.local.db.dao.ActivityDao
+import com.sangeeta.chronomind.local.db.dao.SessionDao
 import com.sangeeta.chronomind.local.db.entity.ActivityEntity
+import com.sangeeta.chronomind.local.db.entity.SessionEntity
+import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 @Singleton
 class ActivityRepository @Inject constructor(
-    private val dao: ActivityDao
-) {
+    private val dao: ActivityDao,
+    private val sessionDao: SessionDao) {
     fun observeAll(): Flow<List<ActivityEntity>> = dao.observeAll()
 
     fun observeById(id: Int): Flow<ActivityEntity?> = dao.observeById(id)
@@ -99,4 +103,22 @@ class ActivityRepository @Inject constructor(
             running = true
         )
     }
+
+    suspend fun logSession(activity: ActivityUiModel, isCompleted: Boolean) {
+        sessionDao.insert(
+            SessionEntity(
+                activityId = activity.id,
+                activityName = activity.name,
+                activityIcon = activity.icon,
+                activityColorHex = activity.colorHex,
+                elapsedSeconds = activity.elapsedSeconds,
+                targetSeconds = activity.targetSeconds,
+                isCompleted = isCompleted,
+                dateLabel = LocalDate.now().toString()
+            )
+        )
+    }
+
+    fun observeSessionsSince(from: String): Flow<List<SessionEntity>> =
+        sessionDao.observeSince(from)
 }

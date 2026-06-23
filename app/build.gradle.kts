@@ -61,6 +61,8 @@ dependencies {
     // Force concurrent version in MAIN runtime too
     implementation(libs.androidx.concurrent.futures)
     implementation(libs.androidx.concurrent.futures.ktx)
+    implementation(libs.places)
+    implementation(libs.androidx.core.i18n)
 
     testImplementation(libs.junit)
 

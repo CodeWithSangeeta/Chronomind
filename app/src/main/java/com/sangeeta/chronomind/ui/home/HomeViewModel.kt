@@ -236,13 +236,16 @@
 
 package com.sangeeta.chronomind.ui.home
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
+import com.sangeeta.chronomind.service.TimerForegroundService
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -257,7 +260,8 @@ import java.time.LocalDate
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val activityRepo: ActivityRepository,
-    private val onboardingRepo: OnboardingRepository
+    private val onboardingRepo: OnboardingRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -294,85 +298,132 @@ class HomeViewModel @Inject constructor(
                     )
                 }
 
-                if (runningUi != null) startTicker() else stopTicker()
+             //   if (runningUi != null) startTicker() else stopTicker()
             }
         }
     }
 
+//    fun startFocus() {
+//        val selected = _uiState.value.selectedActivity ?: return
+//        viewModelScope.launch {
+//            val entity = activityRepo.observeById(selected.id)
+//            var latest: ActivityEntity? = null
+//            entity.collect {
+//                latest = it
+//                return@collect
+//            }
+//            latest?.let { activityRepo.startActivity(it) }
+//        }
+//    }
+//
+//    fun pauseSession() {
+//        val running = _uiState.value.runningActivity ?: return
+//        viewModelScope.launch {
+//            val entity = findEntity(running.id) ?: return@launch
+//            activityRepo.pauseActivity(entity.copy(elapsedSeconds = running.elapsedSeconds))
+//        }
+//    }
+//
+//    fun finishSession() {
+//        val running = _uiState.value.runningActivity ?: return
+//        viewModelScope.launch {
+//            val entity = findEntity(running.id) ?: return@launch
+//            activityRepo.finishActivity(
+//                activity = entity.copy(elapsedSeconds = running.elapsedSeconds),
+//                todayLabel = todayLabel()
+//            )
+//        }
+//    }
+//
+//    fun switchActivity() {
+//        viewModelScope.launch {
+//            val current = _uiState.value.runningActivity
+//            val next = _uiState.value.recentActivities.firstOrNull { it.id != current?.id } ?: return@launch
+//            val entity = findEntity(next.id) ?: return@launch
+//            activityRepo.switchToActivity(entity)
+//        }
+//    }
+
+
+
     fun startFocus() {
-        val selected = _uiState.value.selectedActivity ?: return
+        val selected = uiState.value.selectedActivity ?: return
         viewModelScope.launch {
-            val entity = activityRepo.observeById(selected.id)
-            var latest: ActivityEntity? = null
-            entity.collect {
-                latest = it
-                return@collect
-            }
-            latest?.let { activityRepo.startActivity(it) }
+            activityRepo.stopAll()
+            activityRepo.updateTimer(selected.id, selected.elapsedSeconds, true)
+            // Start the foreground service — it takes over ticking
+            context.startForegroundService(TimerForegroundService.startIntent(context))
         }
     }
 
     fun pauseSession() {
-        val running = _uiState.value.runningActivity ?: return
+        val running = uiState.value.runningActivity ?: return
         viewModelScope.launch {
-            val entity = findEntity(running.id) ?: return@launch
-            activityRepo.pauseActivity(entity.copy(elapsedSeconds = running.elapsedSeconds))
+            activityRepo.updateTimer(running.id, running.elapsedSeconds, false)
+            context.startService(TimerForegroundService.pauseIntent(context))
         }
     }
 
+
     fun finishSession() {
-        val running = _uiState.value.runningActivity ?: return
+        val running = uiState.value.runningActivity ?: return
         viewModelScope.launch {
-            val entity = findEntity(running.id) ?: return@launch
-            activityRepo.finishActivity(
-                activity = entity.copy(elapsedSeconds = running.elapsedSeconds),
-                todayLabel = todayLabel()
+            activityRepo.updateTimer(running.id, 0L, false)
+            activityRepo.updateStreak(
+                id = running.id,
+                streak = running.streakDays + 1,
+                date = LocalDate.now().toString()
             )
+            context.startService(TimerForegroundService.stopIntent(context))
         }
     }
 
     fun switchActivity() {
         viewModelScope.launch {
-            val current = _uiState.value.runningActivity
-            val next = _uiState.value.recentActivities.firstOrNull { it.id != current?.id } ?: return@launch
-            val entity = findEntity(next.id) ?: return@launch
-            activityRepo.switchToActivity(entity)
+            val current = uiState.value.runningActivity
+            val next = uiState.value.recentActivities.firstOrNull { it.id != current?.id } ?: return@launch
+            activityRepo.stopAll()
+            activityRepo.updateTimer(next.id, next.elapsedSeconds, true)
+            // Service keeps running, it'll auto-pick the new running activity next tick
         }
     }
 
-    private fun startTicker() {
-        if (timerJob?.isActive == true) return
 
-        timerJob = viewModelScope.launch {
-            while (true) {
-                delay(1000)
-                val running = _uiState.value.runningActivity ?: break
-                val updatedElapsed = running.elapsedSeconds + 1
 
-                _uiState.update { state ->
-                    val updatedRunning = running.copy(elapsedSeconds = updatedElapsed)
-                    state.copy(
-                        runningActivity = updatedRunning,
-                        selectedActivity = updatedRunning,
-                        recentActivities = state.recentActivities.map {
-                            if (it.id == updatedRunning.id) updatedRunning else it
-                        }
-                    )
-                }
 
-                activityRepo.updateTimer(
-                    id = running.id,
-                    elapsed = updatedElapsed,
-                    running = true
-                )
-            }
-        }
-    }
-
-    private fun stopTicker() {
-        timerJob?.cancel()
-        timerJob = null
-    }
+//    private fun startTicker() {
+//        if (timerJob?.isActive == true) return
+//
+//        timerJob = viewModelScope.launch {
+//            while (true) {
+//                delay(1000)
+//                val running = _uiState.value.runningActivity ?: break
+//                val updatedElapsed = running.elapsedSeconds + 1
+//
+//                _uiState.update { state ->
+//                    val updatedRunning = running.copy(elapsedSeconds = updatedElapsed)
+//                    state.copy(
+//                        runningActivity = updatedRunning,
+//                        selectedActivity = updatedRunning,
+//                        recentActivities = state.recentActivities.map {
+//                            if (it.id == updatedRunning.id) updatedRunning else it
+//                        }
+//                    )
+//                }
+//
+//                activityRepo.updateTimer(
+//                    id = running.id,
+//                    elapsed = updatedElapsed,
+//                    running = true
+//                )
+//            }
+//        }
+//    }
+//
+//    private fun stopTicker() {
+//        timerJob?.cancel()
+//        timerJob = null
+//    }
 
     private suspend fun findEntity(id: Int): ActivityEntity? {
         var found: ActivityEntity? = null

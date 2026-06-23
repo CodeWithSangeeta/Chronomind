@@ -1,14 +1,18 @@
-//package com.sangeeta.chronomind.ui.insights
-//
-//
-//import androidx.lifecycle.ViewModel
-//import dagger.hilt.android.lifecycle.HiltViewModel
-//import javax.inject.Inject
-//import kotlinx.coroutines.flow.MutableStateFlow
-//import kotlinx.coroutines.flow.StateFlow
-//import kotlinx.coroutines.flow.asStateFlow
-//import kotlinx.coroutines.flow.update
-//
+package com.sangeeta.chronomind.ui.insights
+
+
+import androidx.core.i18n.DateTimeFormatter
+import androidx.lifecycle.ViewModel
+import com.sangeeta.chronomind.local.db.entity.SessionEntity
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+
 //@HiltViewModel
 //class InsightsViewModel @Inject constructor() : ViewModel() {
 //

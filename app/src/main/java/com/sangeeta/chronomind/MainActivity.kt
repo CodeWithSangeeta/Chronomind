@@ -1,5 +1,6 @@
 package com.sangeeta.chronomind
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,15 +9,11 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sangeeta.chronomind.ui.onboarding.OnboardingNavHost
 import com.sangeeta.chronomind.repository.OnboardingRepository
-import com.sangeeta.chronomind.ui.activities.AllActivitiesScreen
-import com.sangeeta.chronomind.ui.create_activity.CreateEditActivityScreen
-import com.sangeeta.chronomind.ui.history.HistoryScreen
-import com.sangeeta.chronomind.ui.home.HomeScreen
-import com.sangeeta.chronomind.ui.insights.InsightsScreen
 import com.sangeeta.chronomind.ui.navigation.MainNavHost
 import com.sangeeta.chronomind.ui.settings.SettingsScreen
 import com.sangeeta.chronomind.ui.widget_setup.WidgetSetupScreen
 import dagger.hilt.android.AndroidEntryPoint
+import android.Manifest
 import javax.inject.Inject
 
 
@@ -28,8 +25,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // In MainActivity, add to onCreate after setContent:
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
+        }
         enableEdgeToEdge()
         setContent {
+
+
             val isDone by onboardingRepository.isOnboardingComplete
                 .collectAsStateWithLifecycle(initialValue = false)
 
@@ -42,43 +45,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-//            OnboardingNavHost(
-//                onNavigateToMain = {
-//                    // State is driven by DataStore; recompose handles navigation
-//                }
-//            )
 
-//            HomeScreen(
-//                onNavigateToSettings = {},
-//                onNavigateToAllActivities = {},
-//                onNavigateToCreateActivity = {},
-//                onNavigateToHistory = {},
-//                onNavigateToInsights = {},
-//                onNavigateToWidgetSetup = {},
-//                onNavigateToWidgetPreview = {}
-//            )
-
-//            AllActivitiesScreen(
-//                onBackClick = {},
-//                onNewActivityClick = {},
-//                onEditActivityClick = {},
-//                onStartActivityClick = {}
-//            )
-
-//            CreateEditActivityScreen(
-//                onBackClick = {},
-//                onSaved = {},
-//                onDeleted = {}
-//            )
-
-
-//            HistoryScreen(
-//                onBackClick = {}
-//            )
-
-//            InsightsScreen(
-//                onBackClick = {}
-//            )
 
 
 //            WidgetSetupScreen(
