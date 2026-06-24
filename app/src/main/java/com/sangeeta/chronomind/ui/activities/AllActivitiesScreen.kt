@@ -68,7 +68,7 @@ fun AllActivitiesScreen(
     onBackClick: () -> Unit,
     onNewActivityClick: () -> Unit,
     onEditActivityClick: (Int) -> Unit,
-    onStartActivityClick: (Int) -> Unit
+    onSelectActivityClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -81,8 +81,8 @@ fun AllActivitiesScreen(
         onEditActivityClick = onEditActivityClick,
         onDeleteActivityClick = viewModel::onDeleteActivity,
         onStartActivityClick = { id ->
-            viewModel.onStartActivity(id)
-            onStartActivityClick(id)
+            viewModel.onSelectForHome(id)
+            onSelectActivityClick()
         }
     )
 }

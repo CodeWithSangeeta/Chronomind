@@ -4,6 +4,7 @@ import com.sangeeta.chronomind.local.db.ChronoDatabase
 import com.sangeeta.chronomind.local.db.dao.ActivityDao
 import android.content.Context
 import androidx.room.Room
+import com.sangeeta.chronomind.local.db.dao.SessionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,9 +20,14 @@ object DataModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): ChronoDatabase =
         Room.databaseBuilder(context, ChronoDatabase::class.java, "chronodb")
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides
     @Singleton
     fun provideActivityDao(db: ChronoDatabase): ActivityDao = db.activityDao()
+
+    @Provides
+    @Singleton
+    fun provideSessionDao(db: ChronoDatabase): SessionDao = db.sessionDao()
 }

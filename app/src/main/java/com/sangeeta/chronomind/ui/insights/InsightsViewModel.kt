@@ -1,18 +1,16 @@
 package com.sangeeta.chronomind.ui.insights
 
 
-import androidx.core.i18n.DateTimeFormatter
-import androidx.lifecycle.ViewModel
-import com.sangeeta.chronomind.local.db.entity.SessionEntity
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-
+//import androidx.lifecycle.ViewModel
+//
+//import dagger.hilt.android.lifecycle.HiltViewModel
+//import javax.inject.Inject
+//import kotlinx.coroutines.flow.MutableStateFlow
+//import kotlinx.coroutines.flow.StateFlow
+//import kotlinx.coroutines.flow.asStateFlow
+//import kotlinx.coroutines.flow.update
+//
+//
 //@HiltViewModel
 //class InsightsViewModel @Inject constructor() : ViewModel() {
 //
@@ -164,6 +162,26 @@ import java.time.temporal.ChronoUnit
 
 
 
+
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.sangeeta.chronomind.local.db.entity.SessionEntity
+import com.sangeeta.chronomind.repository.ActivityRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
+import java.util.Locale
+import javax.inject.Inject
+
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
     private val activityRepo: ActivityRepository
@@ -172,161 +190,261 @@ class InsightsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(InsightsUiState(isLoading = true))
     val uiState: StateFlow<InsightsUiState> = _uiState.asStateFlow()
 
-    init { observeAndBuild(InsightsRange.WEEK) }
+    private var observeJob: Job? = null
+    private var cachedSessions: List<SessionEntity> = emptyList()
 
-    fun onRangeSelected(range: InsightsRange) {
-        observeAndBuild(range)
+    init {
+        observeSessions()
     }
 
-    private fun observeAndBuild(range: InsightsRange) {
-        activityRepo.observeSessionsSince("2000-01-01")
-            .onEach { sessions -> buildInsights(sessions, range) }
+    fun onRangeSelected(range: InsightsRange) {
+        _uiState.value = _uiState.value.copy(selectedRange = range)
+        buildInsights(cachedSessions, range)
+    }
+
+    private fun observeSessions() {
+        observeJob?.cancel()
+        observeJob = activityRepo
+            .observeSessionsSince("2000-01-01")
+            .onEach { sessions ->
+                cachedSessions = sessions
+                buildInsights(sessions, _uiState.value.selectedRange)
+            }
             .launchIn(viewModelScope)
     }
 
     private fun buildInsights(all: List<SessionEntity>, range: InsightsRange) {
         val today = LocalDate.now()
+
         val cutoff = when (range) {
-            InsightsRange.WEEK  -> today.minusDays(6)
+            InsightsRange.WEEK -> today.minusDays(6)
             InsightsRange.MONTH -> today.minusDays(29)
-            InsightsRange.YEAR  -> today.minusYears(1)
+            InsightsRange.YEAR -> today.minusYears(1).plusDays(1)
         }
 
-        val current = all.filter { !LocalDate.parse(it.dateLabel).isBefore(cutoff) }
-        val previous = all.filter {
-            val d = LocalDate.parse(it.dateLabel)
-            d.isBefore(cutoff) && !d.isBefore(cutoff.minusDays(cutoff.until(today, ChronoUnit.DAYS)))
+        val current = all.filter { session ->
+            parseDate(session.dateLabel)?.let { !it.isBefore(cutoff) } == true
         }
 
-        // Summary
-        val totalSec     = current.sumOf { it.elapsedSeconds }
+        val previousWindowDays = when (range) {
+            InsightsRange.WEEK -> 7L
+            InsightsRange.MONTH -> 30L
+            InsightsRange.YEAR -> ChronoUnit.DAYS.between(cutoff, today) + 1
+        }
+
+        val previousStart = cutoff.minusDays(previousWindowDays)
+        val previousEnd = cutoff.minusDays(1)
+
+        val previous = all.filter { session ->
+            val date = parseDate(session.dateLabel) ?: return@filter false
+            !date.isBefore(previousStart) && !date.isAfter(previousEnd)
+        }
+
+        val totalSec = current.sumOf { it.elapsedSeconds }
         val prevTotalSec = previous.sumOf { it.elapsedSeconds }
-        val completed    = current.count { it.isCompleted }
-        val prevCompleted = previous.count { it.isCompleted }
-        val completionRate = if (current.isEmpty()) 0 else (completed * 100f / current.size).toInt()
-        val prevRate = if (previous.isEmpty()) 0 else (prevCompleted * 100f / previous.size).toInt()
 
-        // Trend chart — group by day/week label
+        val completed = current.count { it.isCompleted }
+        val prevCompleted = previous.count { it.isCompleted }
+
+        val completionRate =
+            if (current.isEmpty()) 0 else ((completed * 100f) / current.size).toInt()
+
+        val prevRate =
+            if (previous.isEmpty()) 0 else ((prevCompleted * 100f) / previous.size).toInt()
+
         val trendPoints = buildTrendPoints(current, range, today)
 
-        // Consistency
-        val activeDays = current.map { it.dateLabel }.toSet()
-        val totalDays  = cutoff.until(today, ChronoUnit.DAYS).toInt() + 1
-        val consistency = if (totalDays == 0) 0 else (activeDays.size * 100f / totalDays).toInt()
+        val activeDays = current.mapNotNull { parseDate(it.dateLabel)?.toString() }.toSet()
+        val totalDays = (ChronoUnit.DAYS.between(cutoff, today) + 1).toInt()
+        val consistencyPercent =
+            if (totalDays <= 0) 0 else ((activeDays.size * 100f) / totalDays).toInt()
 
-        // Current streak — count back from today
-        var streak = 0
-        var checkDay = today
-        while (activeDays.contains(checkDay.toString())) {
-            streak++
-            checkDay = checkDay.minusDays(1)
+        var currentStreak = 0
+        var checkingDay = today
+        while (activeDays.contains(checkingDay.toString())) {
+            currentStreak++
+            checkingDay = checkingDay.minusDays(1)
         }
 
-        // Longest streak
-        val sortedDays = all.map { LocalDate.parse(it.dateLabel) }.toSortedSet()
-        var longest = 0; var tempStreak = 0; var prev: LocalDate? = null
+        val sortedDays = all
+            .mapNotNull { parseDate(it.dateLabel) }
+            .toSortedSet()
+
+        var longestStreak = 0
+        var tempStreak = 0
+        var previousDay: LocalDate? = null
+
         for (day in sortedDays) {
-            tempStreak = if (prev != null && prev!!.plusDays(1) == day) tempStreak + 1 else 1
-            if (tempStreak > longest) longest = tempStreak
-            prev = day
+            tempStreak = if (previousDay != null && previousDay.plusDays(1) == day) {
+                tempStreak + 1
+            } else {
+                1
+            }
+            if (tempStreak > longestStreak) longestStreak = tempStreak
+            previousDay = day
         }
 
-        // Top activities by total time
         val topActivities = current
             .groupBy { it.activityName to it.activityIcon }
             .entries
-            .sortedByDescending { it.value.sumOf { s -> s.elapsedSeconds } }
+            .sortedByDescending { entry -> entry.value.sumOf { it.elapsedSeconds } }
             .take(3)
-            .mapIndexed { i, entry ->
-                val secs = entry.value.sumOf { it.elapsedSeconds }
-                val share = if (totalSec == 0L) 0 else (secs * 100f / totalSec).toInt()
+            .mapIndexed { index, entry ->
+                val activitySeconds = entry.value.sumOf { it.elapsedSeconds }
+                val sharePercent =
+                    if (totalSec == 0L) 0 else ((activitySeconds * 100f) / totalSec).toInt()
+
                 TopActivityUiModel(
-                    rank          = i + 1,
-                    name          = entry.key.first,
-                    totalFocusTime = formatSeconds(secs),
-                    sharePercent  = share,
-                    emoji         = entry.key.second
+                    rank = index + 1,
+                    name = entry.key.first,
+                    totalFocusTime = formatSeconds(activitySeconds),
+                    sharePercent = sharePercent,
+                    emoji = entry.key.second
                 )
             }
 
-        // Pattern insight — most productive day of week
-        val dayMap = current.groupBy {
-            LocalDate.parse(it.dateLabel).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-        }.mapValues { e -> e.value.sumOf { it.elapsedSeconds } }
-        val bestDay = dayMap.maxByOrNull { it.value }
+        val weekdayOrder = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        val dayMap = current
+            .groupBy { session ->
+                parseDate(session.dateLabel)
+                    ?.dayOfWeek
+                    ?.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+                    ?: ""
+            }
+            .mapValues { entry -> entry.value.sumOf { it.elapsedSeconds } }
+
+        val orderedDayValues = weekdayOrder.map { day ->
+            ((dayMap[day] ?: 0L) / 60L).toInt()
+        }
+
+        val bestDayEntry = dayMap.maxByOrNull { it.value }
+        val highlightedBarIndex =
+            weekdayOrder.indexOf(bestDayEntry?.key).takeIf { it >= 0 } ?: -1
 
         _uiState.value = InsightsUiState(
-            isLoading      = false,
-            selectedRange  = range,
-            summary        = InsightsSummary(
-                totalFocusTime    = formatSeconds(totalSec),
-                totalFocusDelta   = deltaPercent(totalSec, prevTotalSec),
+            isLoading = false,
+            selectedRange = range,
+            summary = InsightsSummary(
+                totalFocusTime = formatSeconds(totalSec),
+                totalFocusDelta = formatDelta(deltaPercent(totalSec, prevTotalSec)),
                 sessionsCompleted = completed,
-                sessionsDelta     = deltaPercent(completed.toLong(), prevCompleted.toLong()),
-                completionRate    = completionRate,
-                completionDelta   = completionRate - prevRate
+                sessionsDelta = formatDelta(deltaPercent(completed.toLong(), prevCompleted.toLong())),
+                completionRate = completionRate,
+                completionDelta = formatDelta((completionRate - prevRate).toLong())
             ),
-            trend          = TrendChartUiModel(
-                title          = "Focus Time Trend",
-                totalLabel     = formatSeconds(totalSec),
-                subtitle       = "Total this ${range.name.lowercase()}",
-                points         = trendPoints,
-                highlightedIndex = trendPoints.indices.maxByOrNull { trendPoints[it].valueMinutes } ?: 0
+            trend = TrendChartUiModel(
+                title = "Focus Time Trend",
+                totalLabel = formatSeconds(totalSec),
+                subtitle = when (range) {
+                    InsightsRange.WEEK -> "Total this week"
+                    InsightsRange.MONTH -> "Total this month"
+                    InsightsRange.YEAR -> "Total this year"
+                },
+                points = trendPoints,
+                highlightedIndex = trendPoints.indices.maxByOrNull { index ->
+                    trendPoints[index].valueMinutes
+                } ?: -1
             ),
-            consistency    = ConsistencyUiModel(
-                currentStreak       = streak,
-                longestStreak       = longest,
-                consistencyPercent  = consistency,
-                completedDaysText   = "${activeDays.size} of $totalDays days"
+            consistency = ConsistencyUiModel(
+                currentStreak = currentStreak,
+                longestStreak = longestStreak,
+                consistencyPercent = consistencyPercent,
+                completedDaysText = "${activeDays.size} of $totalDays days"
             ),
-            topActivities  = topActivities,
-            pattern        = PatternInsightUiModel(
-                title              = "Most Productive Day",
-                highlight          = bestDay?.key ?: "—",
-                value              = formatSeconds(bestDay?.value ?: 0L),
-                description        = if (bestDay != null) "${bestDay.key} is your strongest focus day." else "Not enough data yet.",
-                miniBars           = dayMap.values.map { (it / 60).toInt() }.takeLast(7),
-                highlightedBarIndex = dayMap.values.toList().indexOfLast { it == bestDay?.value }
+            topActivities = topActivities,
+            pattern = PatternInsightUiModel(
+                title = "Most Productive Day",
+                highlight = bestDayEntry?.key ?: "—",
+                value = formatSeconds(bestDayEntry?.value ?: 0L),
+                description = if (bestDayEntry != null) {
+                    "${bestDayEntry.key} is your strongest focus day."
+                } else {
+                    "Not enough data yet."
+                },
+                miniBars = orderedDayValues,
+                highlightedBarIndex = highlightedBarIndex
             )
         )
     }
 
-    private fun buildTrendPoints(sessions: List<SessionEntity>, range: InsightsRange, today: LocalDate): List<TrendPointUiModel> {
+    private fun buildTrendPoints(
+        sessions: List<SessionEntity>,
+        range: InsightsRange,
+        today: LocalDate
+    ): List<TrendPointUiModel> {
         return when (range) {
-            InsightsRange.WEEK -> (6 downTo 0).map { daysAgo ->
-                val day = today.minusDays(daysAgo.toLong())
-                val label = day.format(DateTimeFormatter.ofPattern("EEE"))
-                val mins = sessions.filter { it.dateLabel == day.toString() }.sumOf { it.elapsedSeconds / 60 }.toInt()
-                TrendPointUiModel(label, mins)
+            InsightsRange.WEEK -> {
+                (6 downTo 0).map { daysAgo ->
+                    val day = today.minusDays(daysAgo.toLong())
+                    val label = day.format(DateTimeFormatter.ofPattern("EEE"))
+                    val minutes = sessions
+                        .filter { parseDate(it.dateLabel) == day }
+                        .sumOf { (it.elapsedSeconds / 60L).toInt() }
+
+                    TrendPointUiModel(
+                        label = label,
+                        valueMinutes = minutes
+                    )
+                }
             }
-            InsightsRange.MONTH -> (3 downTo 0).map { weeksAgo ->
-                val weekStart = today.minusDays(weeksAgo * 7L)
-                val label = "W${4 - weeksAgo}"
-                val mins = sessions.filter {
-                    val d = LocalDate.parse(it.dateLabel)
-                    !d.isBefore(weekStart.minusDays(6)) && !d.isAfter(weekStart)
-                }.sumOf { it.elapsedSeconds / 60 }.toInt()
-                TrendPointUiModel(label, mins)
+
+            InsightsRange.MONTH -> {
+                (3 downTo 0).map { weeksAgo ->
+                    val weekEnd = today.minusDays((weeksAgo * 7L))
+                    val weekStart = weekEnd.minusDays(6)
+                    val label = "W${4 - weeksAgo}"
+
+                    val minutes = sessions
+                        .filter { session ->
+                            val date = parseDate(session.dateLabel) ?: return@filter false
+                            !date.isBefore(weekStart) && !date.isAfter(weekEnd)
+                        }
+                        .sumOf { (it.elapsedSeconds / 60L).toInt() }
+
+                    TrendPointUiModel(
+                        label = label,
+                        valueMinutes = minutes
+                    )
+                }
             }
-            InsightsRange.YEAR -> (11 downTo 0).map { monthsAgo ->
-                val month = today.minusMonths(monthsAgo.toLong())
-                val label = month.format(DateTimeFormatter.ofPattern("MMM"))
-                val mins = sessions.filter {
-                    LocalDate.parse(it.dateLabel).month == month.month &&
-                            LocalDate.parse(it.dateLabel).year == month.year
-                }.sumOf { it.elapsedSeconds / 60 }.toInt()
-                TrendPointUiModel(label, mins)
+
+            InsightsRange.YEAR -> {
+                (11 downTo 0).map { monthsAgo ->
+                    val monthDate = today.minusMonths(monthsAgo.toLong())
+                    val label = monthDate.format(DateTimeFormatter.ofPattern("MMM"))
+
+                    val minutes = sessions
+                        .filter { session ->
+                            val date = parseDate(session.dateLabel) ?: return@filter false
+                            date.month == monthDate.month && date.year == monthDate.year
+                        }
+                        .sumOf { (it.elapsedSeconds / 60L).toInt() }
+
+                    TrendPointUiModel(
+                        label = label,
+                        valueMinutes = minutes
+                    )
+                }
             }
         }
     }
 
-    private fun deltaPercent(current: Long, previous: Long): Int {
-        if (previous == 0L) return 0
-        return ((current - previous) * 100f / previous).toInt()
+    private fun parseDate(value: String): LocalDate? {
+        return runCatching { LocalDate.parse(value) }.getOrNull()
     }
 
-    private fun formatSeconds(sec: Long): String {
-        val h = sec / 3600; val m = (sec % 3600) / 60
-        return if (h > 0) "${h}h ${m}m" else "${m}m"
+    private fun deltaPercent(current: Long, previous: Long): Long {
+        if (previous <= 0L) return 0L
+        return (((current - previous) * 100f) / previous).toLong()
+    }
+
+    private fun formatDelta(value: Long): String {
+        return if (value > 0) "+$value%" else "$value%"
+    }
+
+    private fun formatSeconds(seconds: Long): String {
+        val hours = seconds / 3600L
+        val minutes = (seconds % 3600L) / 60L
+        return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
     }
 }

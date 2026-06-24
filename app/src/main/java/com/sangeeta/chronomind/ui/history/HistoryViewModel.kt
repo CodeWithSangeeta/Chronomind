@@ -1,18 +1,16 @@
-package com.sangeeta.chronomind.ui.history
-
-
-import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.ViewModel
-import com.google.android.libraries.places.api.model.LocalDate
-import com.sangeeta.chronomind.local.db.entity.SessionEntity
-import com.sangeeta.chronomind.repository.ActivityRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-
+//package com.sangeeta.chronomind.ui.history
+//
+//
+//import androidx.compose.ui.graphics.Color
+//import androidx.lifecycle.ViewModel
+//
+//import dagger.hilt.android.lifecycle.HiltViewModel
+//import javax.inject.Inject
+//import kotlinx.coroutines.flow.MutableStateFlow
+//import kotlinx.coroutines.flow.StateFlow
+//import kotlinx.coroutines.flow.asStateFlow
+//import kotlinx.coroutines.flow.update
+//
 //@HiltViewModel
 //class HistoryViewModel @Inject constructor() : ViewModel() {
 //
@@ -245,11 +243,31 @@ import kotlinx.coroutines.flow.update
 //        )
 //    }
 //}
+//
+//
+//
+//
+//
+//
 
 
+package com.sangeeta.chronomind.ui.history
 
-
-
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.sangeeta.chronomind.local.db.entity.SessionEntity
+import com.sangeeta.chronomind.repository.ActivityRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
@@ -259,21 +277,15 @@ class HistoryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HistoryUiState(isLoading = true))
     val uiState: StateFlow<HistoryUiState> = _uiState.asStateFlow()
 
+    private var cachedSessions: List<SessionEntity> = emptyList()
+
     init {
         observeSessions()
     }
 
-    private fun observeSessions() {
-        // Observe all sessions; filter/group in real-time
-        activityRepo.observeSessionsSince("2000-01-01") // all-time baseline
-            .onEach { sessions -> rebuildState(sessions) }
-            .launchIn(viewModelScope)
-    }
-
     fun onRangeSelected(range: HistoryRange) {
         _uiState.update { it.copy(selectedRange = range) }
-        // Re-trigger with new range — re-collect from current data
-        rebuildFromCurrentSessions(range)
+        rebuildFromCurrentSessions()
     }
 
     fun onFilterSelected(filter: HistoryFilter) {
@@ -286,81 +298,85 @@ class HistoryViewModel @Inject constructor(
         rebuildFromCurrentSessions()
     }
 
-    private var cachedSessions: List<SessionEntity> = emptyList()
-
-    private fun rebuildState(sessions: List<SessionEntity>) {
-        cachedSessions = sessions
-        rebuildFromCurrentSessions()
+    private fun observeSessions() {
+        activityRepo.observeSessionsSince("2000-01-01")
+            .onEach { sessions ->
+                cachedSessions = sessions
+                rebuildFromCurrentSessions()
+            }
+            .launchIn(viewModelScope)
     }
 
-    private fun rebuildFromCurrentSessions(
-        range: HistoryRange = _uiState.value.selectedRange,
-        filter: HistoryFilter = _uiState.value.selectedFilter,
-        sort: HistorySort = _uiState.value.selectedSort
-    ) {
+    private fun rebuildFromCurrentSessions() {
+        val range = _uiState.value.selectedRange
+        val filter = _uiState.value.selectedFilter
+        val sort = _uiState.value.selectedSort
         val today = LocalDate.now()
 
-        // Date cutoff based on range
         val cutoff = when (range) {
-            HistoryRange.DAY   -> today
-            HistoryRange.WEEK  -> today.minusDays(6)
+            HistoryRange.DAY -> today
+            HistoryRange.WEEK -> today.minusDays(6)
             HistoryRange.MONTH -> today.minusDays(29)
         }
 
         val filtered = cachedSessions
-            .filter {
-                val sessionDate = LocalDate.parse(it.dateLabel)
+            .filter { session ->
+                val sessionDate = parseDate(session.dateLabel) ?: return@filter false
                 !sessionDate.isBefore(cutoff)
             }
             .filter {
                 when (filter) {
-                    HistoryFilter.ALL       -> true
+                    HistoryFilter.ALL -> true
                     HistoryFilter.COMPLETED -> it.isCompleted
                     HistoryFilter.INCOMPLETE -> !it.isCompleted
                 }
             }
-            .let {
-                if (sort == HistorySort.OLDEST_FIRST) it.reversed() else it
+            .let { sessions ->
+                when (sort) {
+                    HistorySort.NEWEST_FIRST -> sessions.sortedByDescending { parseDate(it.dateLabel) }
+                    HistorySort.OLDEST_FIRST -> sessions.sortedBy { parseDate(it.dateLabel) }
+                }
             }
 
-        // Group by date label
         val grouped = filtered
             .groupBy { it.dateLabel }
-            .entries
-            .sortedByDescending { it.key }
+            .toSortedMap(compareByDescending { it })
             .map { (dateStr, sessions) ->
-                val date = LocalDate.parse(dateStr)
-                val title = when {
-                    date == today            -> "Today"
-                    date == today.minusDays(1) -> "Yesterday"
-                    else                     -> date.format(DateTimeFormatter.ofPattern("MMM d"))
+                val date = parseDate(dateStr) ?: today
+                val title = when (date) {
+                    today -> "Today"
+                    today.minusDays(1) -> "Yesterday"
+                    else -> date.format(DateTimeFormatter.ofPattern("MMM d"))
                 }
+
                 HistoryDateGroup(
-                    title       = title,
+                    title = title,
                     subtitleDate = date.format(DateTimeFormatter.ofPattern("yyyy")),
-                    sessions    = sessions.map { it.toUiModel() }
+                    sessions = sessions.map { it.toUiModel() }
                 )
+            }
+            .let { groups ->
+                when (sort) {
+                    HistorySort.NEWEST_FIRST -> groups
+                    HistorySort.OLDEST_FIRST -> groups.reversed()
+                }
             }
 
         val allSessions = grouped.flatMap { it.sessions }
-        val completed = allSessions.count { it.isCompleted }
-        val totalSec = cachedSessions.sumOf { it.elapsedSeconds }
+        val completedCount = allSessions.count { it.isCompleted }
+        val totalSeconds = filtered.sumOf { it.elapsedSeconds }
 
         _uiState.update {
             it.copy(
-                isLoading      = false,
-                selectedRange  = range,
-                selectedFilter = filter,
-                selectedSort   = sort,
+                isLoading = false,
                 groupedSessions = grouped,
                 summary = HistorySummary(
-                    totalSessions   = allSessions.size,
-                    totalFocusTime  = formatSeconds(totalSec),
-                    completionRate  = if (allSessions.isEmpty()) 0
-                    else (completed * 100f / allSessions.size).toInt(),
-                    rangeText       = when (range) {
-                        HistoryRange.DAY   -> today.format(DateTimeFormatter.ofPattern("MMM d"))
-                        HistoryRange.WEEK  -> "${cutoff.format(DateTimeFormatter.ofPattern("MMM d"))} – ${today.format(DateTimeFormatter.ofPattern("MMM d"))}"
+                    totalSessions = allSessions.size,
+                    totalFocusTime = formatSeconds(totalSeconds),
+                    completionRate = if (allSessions.isEmpty()) 0 else ((completedCount * 100f) / allSessions.size).toInt(),
+                    rangeText = when (range) {
+                        HistoryRange.DAY -> today.format(DateTimeFormatter.ofPattern("MMM d"))
+                        HistoryRange.WEEK -> "${cutoff.format(DateTimeFormatter.ofPattern("MMM d"))} - ${today.format(DateTimeFormatter.ofPattern("MMM d"))}"
                         HistoryRange.MONTH -> today.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
                     }
                 )
@@ -368,18 +384,27 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
-    private fun SessionEntity.toUiModel() = HistorySessionUiModel(
-        id           = id,
-        activityName = activityName,
-        durationText = formatSeconds(elapsedSeconds),
-        isCompleted  = isCompleted,
-        iconEmoji    = activityIcon,
-        accentColor  = Color(android.graphics.Color.parseColor("#$activityColorHex"))
-    )
+    private fun SessionEntity.toUiModel(): HistorySessionUiModel {
+        val safeColor = runCatching { Color(android.graphics.Color.parseColor(activityColorHex)) }
+            .getOrElse { Color(0xFFF6C445) }
 
-    private fun formatSeconds(sec: Long): String {
-        val h = sec / 3600
-        val m = (sec % 3600) / 60
-        return if (h > 0) "${h}h ${m}m" else "${m}m"
+        return HistorySessionUiModel(
+            id = id,
+            activityName = activityName,
+            durationText = formatSeconds(elapsedSeconds),
+            isCompleted = isCompleted,
+            iconEmoji = activityIcon,
+            accentColor = safeColor
+        )
+    }
+
+    private fun parseDate(value: String): LocalDate? {
+        return runCatching { LocalDate.parse(value) }.getOrNull()
+    }
+
+    private fun formatSeconds(seconds: Long): String {
+        val hours = seconds / 3600L
+        val minutes = (seconds % 3600L) / 60L
+        return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
     }
 }

@@ -137,12 +137,27 @@ fun MainNavHost(
         }
 
         // ── All Activities ──────────────────────────────────────────────
+//        composable(route = ChronoRoutes.AllActivities.route) {
+//            AllActivitiesScreen(
+//                onBackClick          = { navController.popBackStack() },
+//                onNewActivityClick   = { navController.navigate(ChronoRoutes.CreateEditActivity.createRoute()) },
+//                onEditActivityClick  = { id -> navController.navigate(ChronoRoutes.CreateEditActivity.createRoute(id)) },
+//                onStartActivityClick = { navController.popBackStack() }
+//            )
+//        }
+
         composable(route = ChronoRoutes.AllActivities.route) {
             AllActivitiesScreen(
-                onBackClick          = { navController.popBackStack() },
-                onNewActivityClick   = { navController.navigate(ChronoRoutes.CreateEditActivity.createRoute()) },
-                onEditActivityClick  = { id -> navController.navigate(ChronoRoutes.CreateEditActivity.createRoute(id)) },
-                onStartActivityClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNewActivityClick = {
+                    navController.navigate(ChronoRoutes.CreateEditActivity.createRoute())
+                },
+                onEditActivityClick = { id ->
+                    navController.navigate(ChronoRoutes.CreateEditActivity.createRoute(id))
+                },
+                onSelectActivityClick = {
+                    navController.popBackStack()
+                }
             )
         }
 

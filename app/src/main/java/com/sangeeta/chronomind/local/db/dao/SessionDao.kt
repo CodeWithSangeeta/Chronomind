@@ -7,7 +7,7 @@ import androidx.room.Query
 import com.sangeeta.chronomind.local.db.entity.SessionEntity
 import kotlinx.coroutines.flow.Flow
 
-// local/db/dao/SessionDao.kt
+
 @Dao
 interface SessionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
