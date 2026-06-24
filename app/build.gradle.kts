@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.androidx.concurrent.futures)
     implementation(libs.androidx.concurrent.futures.ktx)
     implementation(libs.androidx.core.i18n)
+    implementation(libs.transport.runtime)
 
     testImplementation(libs.junit)
 
@@ -91,4 +92,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     implementation(libs.coroutines.android)
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
 }

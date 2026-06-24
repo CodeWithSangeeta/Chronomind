@@ -1,5 +1,5 @@
-package com.sangeeta.chronomind.local.db.dao
-
+//package com.sangeeta.chronomind.local.db.dao
+//
 //import androidx.room.*
 //import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 //import kotlinx.coroutines.flow.Flow
@@ -33,11 +33,23 @@ package com.sangeeta.chronomind.local.db.dao
 //
 //    @Query("DELETE FROM activities")
 //    suspend fun deleteAll()
+//
+//    // ── New in v2 ──────────────────────────────────────────────────────────
+//
+//    @Query("SELECT * FROM activities WHERE isRunning = 1 LIMIT 1")
+//    fun observeRunning(): Flow<ActivityEntity?>
+//
+//    @Query("UPDATE activities SET isRunning = 0")
+//    suspend fun stopAll()
+//
+//    @Query("UPDATE activities SET icon = :icon, colorHex = :colorHex WHERE id = :id")
+//    suspend fun updateAppearance(id: Int, icon: String, colorHex: String)
 //}
 
 
 
 
+package com.sangeeta.chronomind.local.db.dao
 
 import androidx.room.*
 import com.sangeeta.chronomind.local.db.entity.ActivityEntity
@@ -51,6 +63,9 @@ interface ActivityDao {
 
     @Query("SELECT * FROM activities WHERE id = :id")
     fun observeById(id: Int): Flow<ActivityEntity?>
+
+    @Query("SELECT * FROM activities WHERE isRunning = 1 LIMIT 1")
+    fun observeRunning(): Flow<ActivityEntity?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(activity: ActivityEntity): Long
@@ -67,20 +82,26 @@ interface ActivityDao {
     @Query("UPDATE activities SET streakDays = :streak, lastActiveDate = :date WHERE id = :id")
     suspend fun updateStreak(id: Int, streak: Int, date: String)
 
-    @Delete
-    suspend fun delete(activity: ActivityEntity)
-
-    @Query("DELETE FROM activities")
-    suspend fun deleteAll()
-
-    // ── New in v2 ──────────────────────────────────────────────────────────
-
-    @Query("SELECT * FROM activities WHERE isRunning = 1 LIMIT 1")
-    fun observeRunning(): Flow<ActivityEntity?>
+    /** Called at midnight check — resets streak to 0 for activities that missed a day and have continueStreakOnMiss = false */
+    @Query("""
+        UPDATE activities 
+        SET streakDays = 0 
+        WHERE continueStreakOnMiss = 0 
+          AND lastActiveDate != :today 
+          AND lastActiveDate != ''
+          AND streakDays > 0
+    """)
+    suspend fun resetMissedStreaks(today: String)
 
     @Query("UPDATE activities SET isRunning = 0")
     suspend fun stopAll()
 
     @Query("UPDATE activities SET icon = :icon, colorHex = :colorHex WHERE id = :id")
     suspend fun updateAppearance(id: Int, icon: String, colorHex: String)
+
+    @Delete
+    suspend fun delete(activity: ActivityEntity)
+
+    @Query("DELETE FROM activities")
+    suspend fun deleteAll()
 }

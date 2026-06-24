@@ -19,6 +19,7 @@ coroutines = "1.8.1"
 concurrentFutures = "1.2.0"
 places = "5.2.0"
 coreI18n = "1.0.0"
+transportRuntime = "4.1.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -70,6 +71,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 # Coroutines
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-core-i18n = { group = "androidx.core", name = "core-i18n", version.ref = "coreI18n" }
+transport-runtime = { group = "com.google.android.datatransport", name = "transport-runtime", version.ref = "transportRuntime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
