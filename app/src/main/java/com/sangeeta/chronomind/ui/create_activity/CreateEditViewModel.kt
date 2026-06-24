@@ -1,123 +1,3 @@
-//package com.sangeeta.chronomind.ui.create_activity
-//
-//
-//import androidx.lifecycle.SavedStateHandle
-//import androidx.lifecycle.ViewModel
-//import com.sangeeta.chronomind.repository.ActivityRepository
-//import dagger.hilt.android.lifecycle.HiltViewModel
-//import javax.inject.Inject
-//import kotlinx.coroutines.flow.MutableStateFlow
-//import kotlinx.coroutines.flow.StateFlow
-//import kotlinx.coroutines.flow.asStateFlow
-//import kotlinx.coroutines.flow.update
-//
-//@HiltViewModel
-//class CreateEditViewModel @Inject constructor(
-//    private val activityRepository: ActivityRepository,
-//    savedStateHandle: SavedStateHandle
-//) : ViewModel() {
-//
-//    private val activityId: Int? = savedStateHandle.get<String>("id")?.toIntOrNull()
-//
-//    private val _uiState = MutableStateFlow(
-//        if (activityId == null) {
-//            CreateEditUiState()
-//        } else {
-//            mockEditState(activityId)
-//        }
-//    )
-//    val uiState: StateFlow<CreateEditUiState> = _uiState.asStateFlow()
-//
-//    fun updateActivityName(value: String) {
-//        _uiState.update { it.copy(activityName = value.take(40)) }
-//    }
-//
-//    fun selectIcon(icon: ActivityIconOption) {
-//        _uiState.update { it.copy(selectedIcon = icon) }
-//    }
-//
-//    fun selectColor(color: ActivityColorOption) {
-//        _uiState.update { it.copy(selectedColor = color) }
-//    }
-//
-//    fun selectTargetType(type: TargetType) {
-//        _uiState.update { it.copy(targetType = type) }
-//    }
-//
-//    fun updateTargetHours(value: Int) {
-//        _uiState.update { it.copy(targetHours = value.coerceIn(0, 23)) }
-//    }
-//
-//    fun updateTargetMinutes(value: Int) {
-//        _uiState.update { it.copy(targetMinutes = value.coerceIn(0, 59)) }
-//    }
-//
-//    fun updateTargetCount(value: String) {
-//        _uiState.update { it.copy(targetCount = value.filter(Char::isDigit).take(4)) }
-//    }
-//
-//    fun updateTargetUnit(value: String) {
-//        _uiState.update { it.copy(targetUnit = value.take(12)) }
-//    }
-//
-//    fun toggleReminder(enabled: Boolean) {
-//        _uiState.update { it.copy(reminderEnabled = enabled) }
-//    }
-//
-//    fun setReminderTime(time: String) {
-//        _uiState.update { it.copy(reminderTime = time) }
-//    }
-//
-//    fun toggleAdvancedExpanded() {
-//        _uiState.update { it.copy(advancedExpanded = !it.advancedExpanded) }
-//    }
-//
-//    fun selectStreakBehavior(behavior: StreakBehavior) {
-//        _uiState.update { it.copy(streakBehavior = behavior) }
-//    }
-//
-//    fun selectCompletionStyle(style: CompletionStyle) {
-//        _uiState.update { it.copy(completionStyle = style) }
-//    }
-//
-//    fun showDeleteConfirm(show: Boolean) {
-//        _uiState.update { it.copy(showDeleteConfirm = show) }
-//    }
-//
-//    fun submit() {
-//        // UI-only phase. Wire save/create logic later.
-//    }
-//
-//    fun deleteActivity() {
-//        // UI-only phase. Wire delete logic later.
-//    }
-//
-//    private fun mockEditState(id: Int): CreateEditUiState {
-//        return CreateEditUiState(
-//            mode = CreateEditMode.EDIT,
-//            activityId = id,
-//            activityName = "Creative Projects",
-//            selectedIcon = ActivityIconOption.CREATIVE,
-//            selectedColor = ActivityColorOption.AMBER,
-//            targetType = TargetType.TIME,
-//            targetHours = 1,
-//            targetMinutes = 30,
-//            reminderEnabled = true,
-//            reminderTime = "07:00 PM",
-//            advancedExpanded = true,
-//            streakBehavior = StreakBehavior.CONTINUE,
-//            completionStyle = CompletionStyle.MANUAL
-//        )
-//    }
-//}
-
-
-
-
-
-
-
-
 package com.sangeeta.chronomind.ui.create_activity
 
 import androidx.lifecycle.SavedStateHandle
@@ -147,7 +27,6 @@ class CreateEditViewModel @Inject constructor(
         if (activityId != -1) loadForEdit(activityId)
     }
 
-    // ── Load existing activity for EDIT mode ────────────────────────────
     private fun loadForEdit(id: Int) {
         repository.observeById(id)
             .onEach { entity ->
@@ -155,9 +34,6 @@ class CreateEditViewModel @Inject constructor(
                 _uiState.update { current ->
                     current.copy(
                         mode           = CreateEditMode.EDIT,
-//                        screenTitle    = "Edit Activity",
-//                        primaryButtonText = "Save Changes",
-//                        showDeleteAction  = true,
                         activityName   = entity.name,
                         targetHours    = entity.targetMinutes / 60,
                         targetMinutes  = entity.targetMinutes % 60,
@@ -173,7 +49,6 @@ class CreateEditViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    // ── Save (insert or update) ─────────────────────────────────────────
     fun submit() {
         val state = _uiState.value
         if (!state.canSubmit) return
@@ -194,7 +69,6 @@ class CreateEditViewModel @Inject constructor(
                     )
                 )
             } else {
-                // UPDATE — fetch current then copy new fields
                 val existing = repository.observeById(activityId).firstOrNull() ?: return@launch
                 repository.update(
                     existing.copy(
@@ -209,7 +83,6 @@ class CreateEditViewModel @Inject constructor(
         }
     }
 
-    // ── Delete ──────────────────────────────────────────────────────────
     fun deleteActivity() {
         if (activityId == -1) return
         viewModelScope.launch {
@@ -218,7 +91,6 @@ class CreateEditViewModel @Inject constructor(
         }
     }
 
-    // ── UI field updates (keep your existing ones, add emoji/hex access) ─
     fun updateActivityName(name: String) {
         if (name.length <= 40) _uiState.update { it.copy(activityName = name) }
     }

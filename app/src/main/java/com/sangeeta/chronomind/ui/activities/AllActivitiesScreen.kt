@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.sangeeta.chronomind.ui.home.ActivityCard
 import com.sangeeta.chronomind.ui.model.ActivitySortOption
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.model.AllActivitiesUiState
@@ -143,12 +144,20 @@ private fun AllActivitiesScreenContent(
 
             else -> {
                 items(uiState.filteredActivities, key = { it.id }) { activity ->
-                    ActivityLibraryCard(
+//                    ActivityLibraryCard(
+//                        activity = activity,
+//                        onCardClick = { onEditActivityClick(activity.id) },
+//                        onStartClick = { onStartActivityClick(activity.id) },
+//                        onEditClick = { onEditActivityClick(activity.id) },
+//                        onDeleteClick = { onDeleteActivityClick(activity.id) }
+//                    )
+
+
+                    ActivityCard(
                         activity = activity,
-                        onCardClick = { onEditActivityClick(activity.id) },
-                        onStartClick = { onStartActivityClick(activity.id) },
-                        onEditClick = { onEditActivityClick(activity.id) },
-                        onDeleteClick = { onDeleteActivityClick(activity.id) }
+                        isSelected = false,   // AllActivities has no "selected for Home" visual context here
+                        onCardClick = { onEditActivityClick(activity.id) },  // card tap → edit
+                        onActionClick = { onStartActivityClick(activity.id) } // play button → select for home
                     )
                 }
             }

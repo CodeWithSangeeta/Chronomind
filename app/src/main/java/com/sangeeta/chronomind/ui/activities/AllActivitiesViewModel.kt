@@ -404,26 +404,21 @@
 //}
 
 
-
 package com.sangeeta.chronomind.ui.activities
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.service.TimerForegroundService
-import com.sangeeta.chronomind.ui.mapper.toUiModel
 import com.sangeeta.chronomind.ui.model.ActivitySortOption
+import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.model.AllActivitiesUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -435,48 +430,38 @@ class AllActivitiesViewModel @Inject constructor(
     private val searchQuery = MutableStateFlow("")
     private val sortOption = MutableStateFlow(ActivitySortOption.RECENTLY_USED)
 
-    val uiState: StateFlow<AllActivitiesUiState> =
-        combine(
-            activityRepository.observeAll(),
-            searchQuery,
-            sortOption
-        ) { entities, query, sort ->
-            val all = entities.map { it.toUiModel() }
-            val filtered = all
-                .filter { activity ->
-                    query.isBlank() || activity.name.contains(query.trim(), ignoreCase = true)
+    val uiState: StateFlow<AllActivitiesUiState> = combine(
+        activityRepository.observeAll(),
+        searchQuery,
+        sortOption
+    ) { entities, query, sort ->
+        val all = entities.map { it.toUiModel() }
+        val filtered = all
+            .filter { activity ->
+                query.isBlank() || activity.name.contains(query.trim(), ignoreCase = true)
+            }
+            .let { list ->
+                when (sort) {
+                    ActivitySortOption.RECENTLY_USED  -> list.sortedByDescending { lastUsedWeight(it.lastActiveDate) }
+                    ActivitySortOption.RECENTLY_ADDED -> list.sortedByDescending { it.id }
+                    ActivitySortOption.A_TO_Z         -> list.sortedBy { it.name.lowercase() }
                 }
-                .let { list ->
-                    when (sort) {
-                        ActivitySortOption.RECENTLY_USED ->
-                            list.sortedByDescending { lastUsedWeight(it.lastActiveDate) }
-                        ActivitySortOption.RECENTLY_ADDED ->
-                            list.sortedByDescending { it.id }
-                        ActivitySortOption.A_TO_Z ->
-                            list.sortedBy { it.name.lowercase() }
-                    }
-                }
-
-            AllActivitiesUiState(
-                isLoading = false,
-                activities = all,
-                filteredActivities = filtered,
-                searchQuery = query,
-                selectedSort = sort
-            )
-        }.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = AllActivitiesUiState(isLoading = true)
+            }
+        AllActivitiesUiState(
+            isLoading = false,
+            activities = all,
+            filteredActivities = filtered,
+            searchQuery = query,
+            selectedSort = sort
         )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = AllActivitiesUiState(isLoading = true)
+    )
 
-    fun onSearchQueryChange(query: String) {
-        searchQuery.value = query
-    }
-
-    fun onSortSelected(option: ActivitySortOption) {
-        sortOption.value = option
-    }
+    fun onSearchQueryChange(query: String) { searchQuery.value = query }
+    fun onSortSelected(option: ActivitySortOption) { sortOption.value = option }
 
     fun onDeleteActivity(activityId: Int) {
         viewModelScope.launch {
@@ -488,23 +473,30 @@ class AllActivitiesViewModel @Inject constructor(
     fun onSelectForHome(activityId: Int) {
         viewModelScope.launch {
             val running = activityRepository.observeRunning().firstOrNull()
-            if (running != null) {
-                activityRepository.updateTimer(
-                    id = running.id,
-                    elapsed = running.elapsedSeconds,
-                    running = false
-                )
+            if (running != null && running.id != activityId) {
+                activityRepository.updateTimer(id = running.id, elapsed = running.elapsedSeconds, running = false)
                 context.startService(TimerForegroundService.pauseIntent(context))
             }
             activityRepository.selectActivity(activityId)
         }
     }
 
-    private fun lastUsedWeight(label: String): Int {
-        return when (label.lowercase()) {
-            "today" -> 100
-            "yesterday" -> 90
-            else -> 0
-        }
+    private fun lastUsedWeight(label: String): Int = when (label.trim().lowercase()) {
+        "today"     -> 100
+        "yesterday" -> 90
+        else        -> 0
     }
 }
+
+private fun ActivityEntity.toUiModel(): ActivityUiModel = ActivityUiModel(
+    id = id,
+    name = name,
+    icon = icon,
+    colorHex = colorHex,
+    elapsedSeconds = elapsedSeconds,
+    targetSeconds = targetMinutes * 60L,
+    isRunning = isRunning,
+    streakDays = streakDays,
+    lastActiveDate = lastActiveDate,
+    continueOnMiss = continueStreakOnMiss
+)

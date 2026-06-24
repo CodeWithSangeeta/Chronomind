@@ -14,6 +14,10 @@ import com.sangeeta.chronomind.ui.settings.SettingsScreen
 import com.sangeeta.chronomind.ui.widget_setup.WidgetSetupScreen
 import dagger.hilt.android.AndroidEntryPoint
 import android.Manifest
+import android.R.attr.subtitle
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import com.chronomind.ui.components.PremiumTimerRing
 import javax.inject.Inject
 
 
@@ -44,6 +48,20 @@ class MainActivity : ComponentActivity() {
                     onNavigateToMain = { }
                 )
             }
+
+//            PremiumTimerRing(
+//                modifier = Modifier
+//                    .fillMaxSize(),
+//                   // .padding(innerPadding),
+//                totalSeconds = 25 * 60,
+//                remainingSeconds = 18 * 60 + 42,
+//                isRunning = true,
+//                activityLabel = "Deep Work",
+//                subtitle = "Focus Time",
+//                onPauseClick = { },
+//                onFinishClick = { },
+//                onSwitchClick = { }
+//            )
 
 
 

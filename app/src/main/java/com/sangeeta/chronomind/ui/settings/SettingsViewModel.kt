@@ -425,3 +425,215 @@ data class SettingsRowUiModel(
     val isExternal: Boolean = false,
     val isValueOnly: Boolean = false
 )
+
+
+
+
+//
+//package com.sangeeta.chronomind.ui.settings
+//
+//import androidx.lifecycle.ViewModel
+//import androidx.lifecycle.viewModelScope
+//import com.sangeeta.chronomind.local.datastore.SettingsDataStore
+//import com.sangeeta.chronomind.repository.ActivityRepository
+//import com.sangeeta.chronomind.repository.OnboardingRepository
+//import dagger.hilt.android.lifecycle.HiltViewModel
+//import kotlinx.coroutines.flow.MutableStateFlow
+//import kotlinx.coroutines.flow.StateFlow
+//import kotlinx.coroutines.flow.asStateFlow
+//import kotlinx.coroutines.flow.combine
+//import kotlinx.coroutines.flow.update
+//import kotlinx.coroutines.launch
+//import javax.inject.Inject
+//
+//data class SettingsUiState(
+//    val isLoading: Boolean = true,
+//    // Profile
+//    val userName: String = "",
+//    // Behaviour (from onboarding DataStore)
+//    val accountabilityType: String = "STREAKS",
+//    val checkInStyle: String = "MANUAL",
+//    val streakOnMiss: String = "CONTINUE",
+//    // App preferences (from settings DataStore)
+//    val isSoundEnabled: Boolean = true,
+//    val isVibrationEnabled: Boolean = true,
+//    val isKeepScreenOn: Boolean = true,
+//    val isDailyReminderEnabled: Boolean = false,
+//    val reminderTime: String = "07:00 AM",
+//    val theme: String = "DARK",
+//    // Stats
+//    val totalActivities: Int = 0,
+//    // Dialog
+//    val showResetConfirm: Boolean = false,
+//    val showClearDataConfirm: Boolean = false,
+//    val saveSuccess: Boolean = false
+//)
+//
+//@HiltViewModel
+//class SettingsViewModel @Inject constructor(
+//    private val onboardingRepo: OnboardingRepository,
+//    private val settingsDataStore: SettingsDataStore,
+//    private val activityRepo: ActivityRepository
+//) : ViewModel() {
+//
+//    private val _uiState = MutableStateFlow(SettingsUiState())
+//    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+//
+//    init {
+//        observeSettings()
+//    }
+//
+//    private fun observeSettings() {
+//        viewModelScope.launch {
+//            combine(
+//                onboardingRepo.userName,
+//                onboardingRepo.accountabilityType,
+//                onboardingRepo.checkInStyle,
+//                onboardingRepo.streakOnMiss,
+//                activityRepo.observeAll()
+//            ) { name, accountability, checkIn, streakMiss, activities ->
+//                SettingsPartialA(name, accountability, checkIn, streakMiss, activities.size)
+//            }.collect { a ->
+//                _uiState.update {
+//                    it.copy(
+//                        userName = a.name,
+//                        accountabilityType = a.accountability,
+//                        checkInStyle = a.checkIn,
+//                        streakOnMiss = a.streakMiss,
+//                        totalActivities = a.totalActivities
+//                    )
+//                }
+//            }
+//        }
+//
+//        viewModelScope.launch {
+//            combine(
+//                settingsDataStore.isSoundEnabled,
+//                settingsDataStore.isVibrationEnabled,
+//                settingsDataStore.isKeepScreenOn,
+//                settingsDataStore.isDailyReminderEnabled,
+//                settingsDataStore.reminderTime
+//            ) { sound, vibration, screen, reminder, time ->
+//                SettingsPartialB(sound, vibration, screen, reminder, time)
+//            }.collect { b ->
+//                _uiState.update {
+//                    it.copy(
+//                        isLoading = false,
+//                        isSoundEnabled = b.sound,
+//                        isVibrationEnabled = b.vibration,
+//                        isKeepScreenOn = b.keepScreenOn,
+//                        isDailyReminderEnabled = b.dailyReminder,
+//                        reminderTime = b.reminderTime
+//                    )
+//                }
+//            }
+//        }
+//    }
+//
+//    // ── Profile ───────────────────────────────────────────────────────────────
+//
+//    fun updateUserName(name: String) {
+//        _uiState.update { it.copy(userName = name) }
+//    }
+//
+//    fun saveProfile() {
+//        viewModelScope.launch {
+//            val state = _uiState.value
+//            onboardingRepo.saveOnboardingResult(
+//                name = state.userName.trim(),
+//                accountability = state.accountabilityType,
+//                checkIn = state.checkInStyle,
+//                streakMiss = state.streakOnMiss
+//            )
+//            _uiState.update { it.copy(saveSuccess = true) }
+//        }
+//    }
+//
+//    fun clearSaveSuccess() { _uiState.update { it.copy(saveSuccess = false) } }
+//
+//    // ── Behaviour preferences ────────────────────────────────────────────────
+//
+//    fun setAccountabilityType(value: String) {
+//        _uiState.update { it.copy(accountabilityType = value) }
+//    }
+//
+//    fun setCheckInStyle(value: String) {
+//        _uiState.update { it.copy(checkInStyle = value) }
+//    }
+//
+//    fun setStreakOnMiss(value: String) {
+//        _uiState.update { it.copy(streakOnMiss = value) }
+//    }
+//
+//    fun saveBehaviourPrefs() {
+//        viewModelScope.launch {
+//            val state = _uiState.value
+//            onboardingRepo.saveOnboardingResult(
+//                name = state.userName.trim(),
+//                accountability = state.accountabilityType,
+//                checkIn = state.checkInStyle,
+//                streakMiss = state.streakOnMiss
+//            )
+//            _uiState.update { it.copy(saveSuccess = true) }
+//        }
+//    }
+//
+//    // ── App preferences ──────────────────────────────────────────────────────
+//
+//    fun setSoundEnabled(value: Boolean) {
+//        viewModelScope.launch { settingsDataStore.setSoundEnabled(value) }
+//    }
+//
+//    fun setVibrationEnabled(value: Boolean) {
+//        viewModelScope.launch { settingsDataStore.setVibrationEnabled(value) }
+//    }
+//
+//    fun setKeepScreenOn(value: Boolean) {
+//        viewModelScope.launch { settingsDataStore.setKeepScreenOn(value) }
+//    }
+//
+//    fun setDailyReminder(value: Boolean) {
+//        viewModelScope.launch { settingsDataStore.setDailyReminder(value) }
+//    }
+//
+//    fun setReminderTime(value: String) {
+//        viewModelScope.launch { settingsDataStore.setReminderTime(value) }
+//    }
+//
+//    // ── Danger zone ──────────────────────────────────────────────────────────
+//
+//    fun showResetConfirm(show: Boolean) { _uiState.update { it.copy(showResetConfirm = show) } }
+//    fun showClearDataConfirm(show: Boolean) { _uiState.update { it.copy(showClearDataConfirm = show) } }
+//
+//    fun clearAllData() {
+//        viewModelScope.launch {
+//            activityRepo.clearAll()
+//            _uiState.update { it.copy(showClearDataConfirm = false) }
+//        }
+//    }
+//
+//    fun resetOnboarding() {
+//        viewModelScope.launch {
+//            onboardingRepo.resetOnboarding()
+//            _uiState.update { it.copy(showResetConfirm = false) }
+//        }
+//    }
+//
+//    // ── Private helpers ──────────────────────────────────────────────────────
+//
+//    private data class SettingsPartialA(
+//        val name: String,
+//        val accountability: String,
+//        val checkIn: String,
+//        val streakMiss: String,
+//        val totalActivities: Int
+//    )
+//
+//    private data class SettingsPartialB(
+//        val sound: Boolean,
+//        val vibration: Boolean,
+//        val keepScreenOn: Boolean,
+//        val dailyReminder: Boolean,
+//        val reminderTime: String
+//    )
+//}

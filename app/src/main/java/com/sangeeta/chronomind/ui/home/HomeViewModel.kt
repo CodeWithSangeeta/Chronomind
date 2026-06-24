@@ -1,4 +1,3 @@
-import com.sangeeta.chronomind.ui.model.ActivityUiModel
 
 //package com.sangeeta.chronomind.ui.home
 //
@@ -755,6 +754,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -868,11 +868,7 @@ class HomeViewModel @Inject constructor(
         val running = uiState.value.runningActivity ?: return
         viewModelScope.launch {
             activityRepo.logSession(running, isCompleted = true)
-            activityRepo.updateTimer(
-                id = running.id,
-                elapsed = 0L,
-                running = false
-            )
+            activityRepo.updateTimer(id = running.id, elapsed = 0L, running = false)
             activityRepo.updateStreak(
                 id = running.id,
                 streak = running.streakDays + 1,
@@ -883,33 +879,46 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun buildRecentActivities(
-        activities: List<ActivityUiModel>
-    ): List<ActivityUiModel> {
+    fun startActivityDirectly(activityId: Int) {
+        viewModelScope.launch {
+            activityRepo.stopAll()
+            activityRepo.selectActivity(activityId)
+            // Wait for state to settle, then start
+            val entity = activityRepo.observeById(activityId).firstOrNull() ?: return@launch
+            activityRepo.updateTimer(id = activityId, elapsed = entity.elapsedSeconds, running = true)
+            context.startForegroundService(TimerForegroundService.startIntent(context))
+        }
+    }
+
+//    private fun buildRecentActivities(activities: List<ActivityUiModel>): List<ActivityUiModel> {
+//        return activities
+//            .filter { it.lastActiveDate.trim().lowercase().let { l -> l == "today" || l == "yesterday" } }
+//            .sortedByDescending { lastUsedWeight(it.lastActiveDate) }
+//            .take(5)
+//    }
+
+
+    private fun buildRecentActivities(activities: List<ActivityUiModel>): List<ActivityUiModel> {
         return activities
             .filter { activity ->
                 val label = activity.lastActiveDate.trim().lowercase()
-                label == "today" || label == "yesterday"
+                // Show if used today, yesterday, within last 7 days, OR has any elapsed time
+                label == "today" ||
+                        label == "yesterday" ||
+                        activity.elapsedSeconds > 0 ||
+                        (label.contains("days ago") && (label.filter { it.isDigit() }.toIntOrNull() ?: 99) <= 7)
             }
-            .sortedByDescending { activity ->
-                lastUsedWeight(activity.lastActiveDate)
-            }
+            .sortedWith(
+                compareByDescending<ActivityUiModel> { lastUsedWeight(it.lastActiveDate) }
+                    .thenByDescending { it.elapsedSeconds }
+            )
             .take(5)
     }
 
-    private fun lastUsedWeight(label: String): Int {
-        return when (label.trim().lowercase()) {
-            "today" -> 100
-            "yesterday" -> 90
-            else -> {
-                if (label.contains("days ago", ignoreCase = true)) {
-                    val n = label.filter { it.isDigit() }.toIntOrNull() ?: 99
-                    maxOf(0, 80 - n)
-                } else {
-                    0
-                }
-            }
-        }
+    private fun lastUsedWeight(label: String): Int = when (label.trim().lowercase()) {
+        "today" -> 100
+        "yesterday" -> 90
+        else -> 0
     }
 
     private data class HomeCombinedState(
@@ -920,17 +929,15 @@ class HomeViewModel @Inject constructor(
     )
 }
 
-private fun ActivityEntity.toUiModel(): ActivityUiModel {
-    return ActivityUiModel(
-        id = id,
-        name = name,
-        icon = icon,
-        colorHex = colorHex,
-        elapsedSeconds = elapsedSeconds,
-        targetSeconds = targetMinutes * 60L,
-        isRunning = isRunning,
-        streakDays = streakDays,
-        lastActiveDate = lastActiveDate,
-        continueOnMiss = continueStreakOnMiss
-    )
-}
+private fun ActivityEntity.toUiModel(): ActivityUiModel = ActivityUiModel(
+    id = id,
+    name = name,
+    icon = icon,
+    colorHex = colorHex,
+    elapsedSeconds = elapsedSeconds,
+    targetSeconds = targetMinutes * 60L,
+    isRunning = isRunning,
+    streakDays = streakDays,
+    lastActiveDate = lastActiveDate,
+    continueOnMiss = continueStreakOnMiss
+)
