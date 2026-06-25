@@ -19,7 +19,6 @@ class ChronoMindApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        // Ensure you initialize your StreakResetWorker scheduler here securely
         com.sangeeta.chronomind.worker.StreakResetWorker.schedule(this)
     }
 }

@@ -393,7 +393,7 @@ class HistoryViewModel @Inject constructor(
             activityName = activityName,
             durationText = formatSeconds(elapsedSeconds),
             isCompleted = isCompleted,
-            iconEmoji = activityIcon,
+            icon= activityIcon,
             accentColor = safeColor
         )
     }

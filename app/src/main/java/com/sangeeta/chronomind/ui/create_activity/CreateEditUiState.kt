@@ -1,96 +1,138 @@
 package com.sangeeta.chronomind.ui.create_activity
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BarChart
-import androidx.compose.material.icons.rounded.Book
-import androidx.compose.material.icons.rounded.Brush
-import androidx.compose.material.icons.rounded.Code
-import androidx.compose.material.icons.rounded.FitnessCenter
-import androidx.compose.material.icons.rounded.Work
-import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.Mood
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.sangeeta.chronomind.local.db.entity.ActivityEntity
+
+enum class CreateEditMode { CREATE, EDIT }
+
+enum class TargetType(val label: String) {
+    TIMER("Timer"),
+    STOPWATCH("Stopwatch")
+}
+
+enum class ActivityIconOption(val icon: ImageVector) {
+    STUDY(Icons.Rounded.Book),
+    EXERCISE(Icons.Rounded.FitnessCenter),
+    READING(Icons.Rounded.Search),
+    WORK(Icons.Rounded.Work),
+    MEDITATION(Icons.Rounded.SelfImprovement),
+    CREATIVE(Icons.Rounded.Palette),
+    GROWTH(Icons.Rounded.TrendingUp),
+    WRITING(Icons.Rounded.Edit),
+    CODING(Icons.Rounded.Code),
+    MUSIC(Icons.Rounded.Headphones),
+    WALKING(Icons.Rounded.DirectionsWalk),
+    RUNNING(Icons.Rounded.DirectionsRun),
+    PLANNING(Icons.Rounded.EventNote),
+    MEETING(Icons.Rounded.Groups),
+    CALL(Icons.Rounded.Call),
+    JOURNAL(Icons.Rounded.MenuBook),
+    COOKING(Icons.Rounded.Restaurant),
+    CLEANING(Icons.Rounded.CleaningServices),
+    SLEEP(Icons.Rounded.Bedtime),
+    SHOPPING(Icons.Rounded.ShoppingCart),
+    OTHER(Icons.Rounded.MoreHoriz);
+
+    companion object {
+        // Fix: Use String for name lookup
+        fun fromName(name: String): ActivityIconOption {
+            return entries.find { it.name == name } ?: GROWTH
+        }
+
+        // Helper to find entry by ImageVector
+        fun fromIcon(icon: ImageVector): ActivityIconOption {
+            return entries.find { it.icon == icon } ?: GROWTH
+        }
+        
+        // Helper for TypeConverters to get a String name from an ImageVector
+        fun toName(icon: ImageVector): String {
+            return entries.find { it.icon == icon }?.name ?: GROWTH.name
+        }
+    }
+}
+
+enum class ActivityColorOption(val hex: String, val color: androidx.compose.ui.graphics.Color) {
+    AMBER("FFC328", Color(0xFFFFC328)),
+    ORANGE("FF6B35", Color(0xFFFF6B35)),
+    RED("FF4444", Color(0xFFFF4444)),
+    PINK("FF69B4", Color(0xFFFF69B4)),
+    PURPLE("8E55EA", Color(0xFF8E55EA)),
+    BLUE("2196F3", Color(0xFF2196F3)),
+    CYAN("00BCD4", Color(0xFF00BCD4)),
+    GREEN("4CAF50", Color(0xFF4CAF50)),
+    TEAL("009688", Color(0xFF009688)),
+    LIME("8BC34A", Color(0xFF8BC34A)),
+    INDIGO("3F51B5", Color(0xFF3F51B5)),
+    DEEP_PURPLE("673AB7", Color(0xFF673AB7)),
+    LIGHT_BLUE("03A9F4", Color(0xFF03A9F4)),
+    MINT("2ECC71", Color(0xFF2ECC71)),
+    CORAL("FF7F50", Color(0xFFFF7F50)),
+    ROSE("E91E63", Color(0xFFE91E63)),
+    GOLD("FFD700", Color(0xFFFFD700)),
+    BROWN("795548", Color(0xFF795548)),
+    SLATE("607D8B", Color(0xFF607D8B)),
+    MAGENTA("C2185B", Color(0xFFC2185B)),
+}
+
+enum class StreakBehavior(val label: String, val description: String) {
+    CONTINUE("Continue streak on miss", "Streak never resets, even if you skip a day"),
+    RESET("Reset streak on miss", "Streak resets to 0 if you miss a day")
+}
+
+enum class CompletionStyle(val label: String, val description: String) {
+    MANUAL("Manual", "You tap Finish when done"),
+    TIMER_END("Auto (when timer ends)", "Session completes automatically when target is reached")
+}
 
 data class CreateEditUiState(
     val mode: CreateEditMode = CreateEditMode.CREATE,
-    val isLoading: Boolean = false,
-    val activityId: Int? = null,
+    val activityId: Int = 0,
+    val screenTitle: String = "New Activity",
     val activityName: String = "",
-    val selectedIcon: ActivityIconOption = ActivityIconOption.CREATIVE,
+    val selectedIcon: ActivityIconOption = ActivityIconOption.GROWTH,
     val selectedColor: ActivityColorOption = ActivityColorOption.AMBER,
-    val targetType: TargetType = TargetType.TIME,
-    val targetHours: Int = 1,
-    val targetMinutes: Int = 30,
-    val targetCount: String = "",
-    val targetUnit: String = "",
-    val reminderEnabled: Boolean = true,
+    val targetType: TargetType = TargetType.TIMER,
+    val targetHours: Int = 0,
+    val targetMinutes: Int = 0,
+    val reminderEnabled: Boolean = false,
     val reminderTime: String = "07:00 PM",
-    val advancedExpanded: Boolean = true,
+    val isAdvancedExpanded: Boolean = false,
     val streakBehavior: StreakBehavior = StreakBehavior.CONTINUE,
     val completionStyle: CompletionStyle = CompletionStyle.MANUAL,
-    val showDeleteConfirm: Boolean = false
+    val isSaving: Boolean = false,
+    val showDeleteConfirm: Boolean = false,
 ) {
-    val screenTitle: String
-        get() = if (mode == CreateEditMode.CREATE) "New Activity" else "Edit Activity"
+    val isValid: Boolean
+        get() = activityName.isNotBlank() &&
+                (targetType == TargetType.STOPWATCH || targetHours > 0 || targetMinutes > 0)
 
-    val primaryButtonText: String
-        get() = if (mode == CreateEditMode.CREATE) "Create Activity" else "Save Changes"
+    val totalTargetMinutes: Int
+        get() = targetHours * 60 + targetMinutes
 
-    val showDeleteAction: Boolean
-        get() = mode == CreateEditMode.EDIT
-
-    val canSubmit: Boolean
-        get() = activityName.trim().isNotEmpty()
-}
-
-enum class CreateEditMode {
-    CREATE,
-    EDIT
-}
-
-enum class TargetType {
-    TIME,
-    COUNT
-}
-
-enum class StreakBehavior(val label: String) {
-    CONTINUE("Continue streak"),
-    RESET("Reset streak")
-}
-
-enum class CompletionStyle(val label: String) {
-    MANUAL("Manual complete"),
-    TIMER_END("Complete on timer end"),
-    COUNT_CHECK("Mark when count reached")
-}
-
-enum class ActivityIconOption(
-    val label: String,
-    val icon: ImageVector,
-    val emoji: String
-) {
-    CREATIVE("Creative", Icons.Rounded.Brush, "🎨"),
-    STUDY("Study", Icons.Rounded.Book, "📘"),
-    CODE("Code", Icons.Rounded.Code, "💻"),
-    WORKOUT("Workout", Icons.Rounded.FitnessCenter, "🏋️"),
-    MEDITATION("Meditation", Icons.Rounded.Mood, "🧘"),
-    WRITING("Writing", Icons.Rounded.Edit, "✍️"),
-    GROWTH("Growth", Icons.Rounded.BarChart, "📈"),
-    WORK("Work", Icons.Rounded.Work, "💼")
-}
-
-enum class ActivityColorOption(
-    val label: String,
-    val color: Color,
-    val hex: String
-) {
-    AMBER("Amber", Color(0xFFF6C445), "#F6C445"),
-    ORANGE("Orange", Color(0xFFF08A13), "#F08A13"),
-    RED("Red", Color(0xFFE04B3F), "#E04B3F"),
-    PINK("Pink", Color(0xFFD93B8A), "#D93B8A"),
-    PURPLE("Purple", Color(0xFF8D49D7), "#8D49D7"),
-    BLUE("Blue", Color(0xFF2F7DE1), "#2F7DE1"),
-    CYAN("Cyan", Color(0xFF24AFC8), "#24AFC8"),
-    GREEN("Green", Color(0xFF4AA84F), "#4AA84F")
+    fun toEntity(existingEntity: ActivityEntity? = null): ActivityEntity {
+        val base = existingEntity ?: ActivityEntity(
+            name = activityName,
+            icon = selectedIcon.icon,
+            targetMinutes = 0
+        )
+        return base.copy(
+            name = activityName.trim(),
+            icon = selectedIcon.icon,
+            colorHex = selectedColor.hex,
+            targetMinutes = if (targetType == TargetType.STOPWATCH) 0 else totalTargetMinutes,
+            targetType = targetType.name,
+            completionStyle = if (targetType == TargetType.STOPWATCH) "MANUAL" else completionStyle.name,
+            continueStreakOnMiss = streakBehavior == StreakBehavior.CONTINUE,
+            reminderEnabled = reminderEnabled,
+            reminderTime = reminderTime,
+            elapsedSeconds = existingEntity?.elapsedSeconds ?: 0L,
+            isRunning = existingEntity?.isRunning ?: false,
+            streakDays = existingEntity?.streakDays ?: 0,
+            lastActiveDate = existingEntity?.lastActiveDate ?: "",
+            orderIndex = existingEntity?.orderIndex ?: 0,
+        )
+    }
 }

@@ -299,7 +299,7 @@ class InsightsViewModel @Inject constructor(
                     name = entry.key.first,
                     totalFocusTime = formatSeconds(activitySeconds),
                     sharePercent = sharePercent,
-                    emoji = entry.key.second
+                    icon = entry.key.second
                 )
             }
 

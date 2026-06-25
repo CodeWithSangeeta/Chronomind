@@ -2,6 +2,7 @@ package com.sangeeta.chronomind.ui.history
 
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 
 data class HistoryUiState(
     val isLoading: Boolean = true,
@@ -33,7 +34,7 @@ data class HistorySessionUiModel(
     val activityName: String,
     val durationText: String,
     val isCompleted: Boolean,
-    val iconEmoji: String,
+    val icon: ImageVector,
     val accentColor: Color
 ) {
     val statusLabel: String

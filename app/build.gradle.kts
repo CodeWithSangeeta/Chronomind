@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.concurrent.futures.ktx)
     implementation(libs.androidx.core.i18n)
     implementation(libs.transport.runtime)
+    implementation(libs.androidx.ui)
 
     testImplementation(libs.junit)
 

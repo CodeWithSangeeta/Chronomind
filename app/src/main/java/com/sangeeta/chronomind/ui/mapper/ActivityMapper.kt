@@ -1,23 +1,32 @@
 package com.sangeeta.chronomind.ui.mapper
 
 import com.sangeeta.chronomind.local.db.entity.ActivityEntity
+import com.sangeeta.chronomind.ui.create_activity.ActivityIconOption
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+/**
+ * Maps database entity to UI model.
+ */
 fun ActivityEntity.toUiModel(): ActivityUiModel {
     val lastUsedLabel = formatLastUsed(lastActiveDate)
     return ActivityUiModel(
         id              = id,
         name            = name,
-        icon            = icon,
+        // Map String name back to ImageVector via ActivityIconOption
+        icon            = ActivityIconOption.fromName(icon).icon,
         colorHex        = colorHex,
         elapsedSeconds  = elapsedSeconds,
         targetSeconds   = targetMinutes * 60L,
         isRunning       = isRunning,
         streakDays      = streakDays,
         lastActiveDate  = lastUsedLabel,
-        continueOnMiss  = continueStreakOnMiss
+        continueOnMiss  = continueStreakOnMiss,
+        targetType      = targetType,
+        completionStyle = completionStyle,
+        reminderEnabled = reminderEnabled,
+        reminderTime    = reminderTime
     )
 }
 

@@ -1,65 +1,39 @@
 package com.sangeeta.chronomind.ui.activities
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sort
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.sangeeta.chronomind.ui.home.ActivityCard
-import com.sangeeta.chronomind.ui.model.ActivitySortOption
-import com.sangeeta.chronomind.ui.model.ActivityUiModel
-import com.sangeeta.chronomind.ui.model.AllActivitiesUiState
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sangeeta.chronomind.ui.components.ActivityCard
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 
@@ -73,6 +47,14 @@ fun AllActivitiesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is AllActivitiesEvent.NavigateToHome -> onSelectActivityClick()
+            }
+        }
+    }
+
     AllActivitiesScreenContent(
         uiState = uiState,
         onBackClick = onBackClick,
@@ -81,10 +63,7 @@ fun AllActivitiesScreen(
         onNewActivityClick = onNewActivityClick,
         onEditActivityClick = onEditActivityClick,
         onDeleteActivityClick = viewModel::onDeleteActivity,
-        onStartActivityClick = { id ->
-            viewModel.onSelectForHome(id)
-            onSelectActivityClick()
-        }
+        onStartActivityClick = viewModel::onPlayClick
     )
 }
 
@@ -132,7 +111,7 @@ private fun AllActivitiesScreenContent(
         when {
             uiState.isEmpty -> {
                 item {
-                    ActivitiesEmptyState(onCreateClick = onNewActivityClick)
+                    ActivitiesEmptyState()
                 }
             }
 
@@ -144,20 +123,11 @@ private fun AllActivitiesScreenContent(
 
             else -> {
                 items(uiState.filteredActivities, key = { it.id }) { activity ->
-//                    ActivityLibraryCard(
-//                        activity = activity,
-//                        onCardClick = { onEditActivityClick(activity.id) },
-//                        onStartClick = { onStartActivityClick(activity.id) },
-//                        onEditClick = { onEditActivityClick(activity.id) },
-//                        onDeleteClick = { onDeleteActivityClick(activity.id) }
-//                    )
-
-
                     ActivityCard(
                         activity = activity,
-                        isSelected = false,   // AllActivities has no "selected for Home" visual context here
-                        onCardClick = { onEditActivityClick(activity.id) },  // card tap → edit
-                        onActionClick = { onStartActivityClick(activity.id) } // play button → select for home
+                        isSelected = false,
+                        onCardClick = { onEditActivityClick(activity.id) },
+                        onActionClick = { onStartActivityClick(activity.id) }
                     )
                 }
             }
@@ -179,7 +149,7 @@ private fun AllActivitiesTopBar(
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         CircularIconButton(
-            icon = Icons.Rounded.ArrowBack,
+            icon = Icons.AutoMirrored.Rounded.ArrowBack,
             contentDescription = "Back",
             onClick = onBackClick
         )
@@ -392,153 +362,24 @@ private fun ActivitiesHeader(
 }
 
 @Composable
-private fun ActivityLibraryCard(
-    activity: ActivityUiModel,
-    onCardClick: () -> Unit,
-    onStartClick: () -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
-) {
-    var menuExpanded by remember { mutableStateOf(false) }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(
-                        Color(0xFF151515),
-                        Color(0xFF101010),
-                        Color(0xFF141414)
-                    )
-                )
-            )
-            .border(
-                width = 1.dp,
-                color = AuraColors.CardBorderDefault,
-                shape = RoundedCornerShape(24.dp)
-            )
-            .clickable(onClick = onCardClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+private fun SearchEmptyState() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        ActivityBadge(
-            emoji = activity.icon,
-            badgeColor = activity.colorHex
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = activity.name,
-                style = AuraTypography.TitleMedium,
-                color = AuraColors.TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = "${formatTargetDuration(activity.targetSeconds)} • Last used ${activity.lastActiveDate.lowercase()}",
-                style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        CircularIconButton(
-            icon = Icons.Rounded.PlayArrow,
-            contentDescription = "Start ${activity.name}",
-            onClick = onStartClick,
-            iconTint = AuraColors.YellowPrimary,
-            containerColor = AuraColors.SurfaceCard,
-            glow = true
-        )
-
-        Box {
-            CircularIconButton(
-                icon = Icons.Rounded.MoreVert,
-                contentDescription = "More actions for ${activity.name}",
-                onClick = { menuExpanded = true },
-                iconTint = AuraColors.TextPrimary,
-                containerColor = Color.Transparent,
-                bordered = false
-            )
-
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false },
-                containerColor = AuraColors.SurfaceCard
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Edit", color = AuraColors.TextPrimary) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Edit,
-                            contentDescription = null,
-                            tint = AuraColors.TextPrimary
-                        )
-                    },
-                    onClick = {
-                        menuExpanded = false
-                        onEditClick()
-                    }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Delete", color = AuraColors.TextPrimary) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Delete,
-                            contentDescription = null,
-                            tint = AuraColors.TextPrimary
-                        )
-                    },
-                    onClick = {
-                        menuExpanded = false
-                        onDeleteClick()
-                    }
-                )
-            }
-        }
+        Text("No activities match your search", color = AuraColors.TextPrimary)
     }
 }
 
 @Composable
-private fun ActivityBadge(
-    emoji: String,
-    badgeColor: String
-) {
-    val tint = runCatching { Color(android.graphics.Color.parseColor(badgeColor)) }
-        .getOrElse { AuraColors.YellowPrimary }
-
-    Box(
-        modifier = Modifier
-            .size(56.dp)
-            .shadow(
-                elevation = 10.dp,
-                shape = CircleShape,
-                ambientColor = tint.copy(alpha = 0.30f),
-                spotColor = tint.copy(alpha = 0.30f)
-            )
-            .clip(CircleShape)
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        tint.copy(alpha = 0.95f),
-                        tint.copy(alpha = 0.55f)
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
+private fun ActivitiesEmptyState() {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = emoji,
-            style = AuraTypography.TitleMedium
-        )
+        Text("No activities in your library yet", color = AuraColors.TextPrimary)
     }
 }
 
@@ -547,106 +388,17 @@ private fun CircularIconButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
-    iconTint: Color = AuraColors.TextPrimary,
-    containerColor: Color = AuraColors.SurfaceCard,
-    bordered: Boolean = true,
-    glow: Boolean = false
+    iconTint: Color = AuraColors.TextPrimary
 ) {
     Box(
         modifier = Modifier
             .size(44.dp)
-            .shadow(
-                elevation = if (glow) 12.dp else 0.dp,
-                shape = CircleShape,
-                ambientColor = AuraColors.YellowGlow,
-                spotColor = AuraColors.YellowGlow
-            )
             .clip(CircleShape)
-            .background(containerColor)
-            .then(
-                if (bordered) {
-                    Modifier.border(
-                        width = 1.dp,
-                        color = AuraColors.CardBorderDefault,
-                        shape = CircleShape
-                    )
-                } else {
-                    Modifier
-                }
-            )
+            .background(AuraColors.SurfaceCard)
+            .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = iconTint
-        )
-    }
-}
-
-@Composable
-private fun ActivitiesEmptyState(
-    onCreateClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(AuraColors.SurfaceCard)
-            .border(
-                width = 1.dp,
-                color = AuraColors.CardBorderDefault,
-                shape = RoundedCornerShape(28.dp)
-            )
-            .padding(horizontal = 24.dp, vertical = 28.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Text(
-            text = "No activities yet",
-            style = AuraTypography.TitleMedium,
-            color = AuraColors.TextPrimary
-        )
-        Text(
-            text = "Create your first focus activity to start building your library.",
-            style = AuraTypography.BodyMedium,
-            color = AuraColors.TextSecondary
-        )
-        NewActivityButton(onClick = onCreateClick)
-    }
-}
-
-@Composable
-private fun SearchEmptyState() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(AuraColors.SurfaceCard)
-            .border(
-                width = 1.dp,
-                color = AuraColors.CardBorderDefault,
-                shape = RoundedCornerShape(24.dp)
-            )
-            .padding(22.dp)
-    ) {
-        Text(
-            text = "No activities match your search.",
-            style = AuraTypography.BodyMedium,
-            color = AuraColors.TextSecondary
-        )
-    }
-}
-
-private fun formatTargetDuration(targetSeconds: Long): String {
-    val totalMinutes = targetSeconds / 60
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-
-    return when {
-        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
-        hours > 0 -> "${hours}h 00m"
-        else -> "${minutes}m"
+        Icon(icon, contentDescription, tint = iconTint)
     }
 }

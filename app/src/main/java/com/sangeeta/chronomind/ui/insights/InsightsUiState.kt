@@ -1,5 +1,6 @@
 package com.sangeeta.chronomind.ui.insights
 
+import androidx.compose.ui.graphics.vector.ImageVector
 
 data class InsightsUiState(
     val isLoading: Boolean = false,
@@ -51,7 +52,7 @@ data class TopActivityUiModel(
     val name: String,
     val totalFocusTime: String,
     val sharePercent: Int,
-    val emoji: String
+    val icon: ImageVector // Changed from String emoji to ImageVector icon
 )
 
 data class PatternInsightUiModel(
