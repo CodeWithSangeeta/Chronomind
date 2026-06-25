@@ -26,7 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ExpandLess
@@ -328,7 +328,7 @@ private fun CreateEditTopBar(
         verticalAlignment = Alignment.Top
     ) {
         CircularTopButton(
-            icon = Icons.Rounded.ArrowBack,
+            icon = Icons.AutoMirrored.Rounded.ArrowBack,
             contentDescription = "Back",
             onClick = onBackClick
         )

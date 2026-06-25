@@ -1,29 +1,5 @@
-//package com.sangeeta.chronomind.local.db
-//
-//
-//import androidx.room.Database
-//import androidx.room.RoomDatabase
-//import com.sangeeta.chronomind.local.db.dao.ActivityDao
-//import com.sangeeta.chronomind.local.db.dao.SessionDao
-//import com.sangeeta.chronomind.local.db.entity.ActivityEntity
-//import com.sangeeta.chronomind.local.db.entity.SessionEntity
-//
-//@Database(
-//    entities      = [ActivityEntity::class, SessionEntity::class],
-//    version       = 1,
-//    exportSchema  = false
-//)
-//abstract class ChronoDatabase : RoomDatabase() {
-//    abstract fun activityDao(): ActivityDao
-//    abstract fun sessionDao(): SessionDao
-//}
-
-
-
-
 package com.sangeeta.chronomind.local.db
 
-import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.sangeeta.chronomind.local.db.dao.ActivityDao
@@ -31,10 +7,9 @@ import com.sangeeta.chronomind.local.db.dao.SessionDao
 import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 import com.sangeeta.chronomind.local.db.entity.SessionEntity
 
-
 @Database(
     entities = [ActivityEntity::class, SessionEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class ChronoDatabase : RoomDatabase() {

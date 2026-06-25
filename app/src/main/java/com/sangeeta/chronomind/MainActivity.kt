@@ -14,10 +14,8 @@ import com.sangeeta.chronomind.ui.settings.SettingsScreen
 import com.sangeeta.chronomind.ui.widget_setup.WidgetSetupScreen
 import dagger.hilt.android.AndroidEntryPoint
 import android.Manifest
-import android.R.attr.subtitle
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import com.chronomind.ui.components.PremiumTimerRing
 import javax.inject.Inject
 
 

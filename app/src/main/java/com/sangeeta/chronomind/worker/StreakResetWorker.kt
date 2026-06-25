@@ -10,15 +10,7 @@ import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
 import java.util.Calendar
 
-/**
- * Runs once per day at midnight.
- * Resets streak to 0 for all activities where:
- *   - continueStreakOnMiss = false (user chose "Reset streak on miss")
- *   - lastActiveDate != today (user missed yesterday)
- *
- * Schedule this from ChronoMindApp.onCreate() by calling
- * StreakResetWorker.schedule(context)
- */
+
 @HiltWorker
 class StreakResetWorker @AssistedInject constructor(
     @Assisted context: Context,
@@ -38,11 +30,7 @@ class StreakResetWorker @AssistedInject constructor(
     companion object {
         private const val WORK_NAME = "streak_reset_daily"
 
-        /**
-         * Call once from ChronoMindApp.onCreate().
-         * Uses KEEP policy so it won't reschedule if already enqueued.
-         * Calculates delay to next midnight so it fires at ~00:00 each day.
-         */
+
         fun schedule(context: Context) {
             val now = Calendar.getInstance()
             val midnight = Calendar.getInstance().apply {
@@ -58,7 +46,6 @@ class StreakResetWorker @AssistedInject constructor(
                 .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
                 .build()
 
-            // After it fires, chain another schedule so it repeats daily
             WorkManager.getInstance(context)
                 .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request)
         }
