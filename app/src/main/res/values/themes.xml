@@ -2,4 +2,12 @@
 <resources>
 
     <style name="Theme.ChronoMind" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.Chronomind.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#000000</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="postSplashScreenTheme">@style/Theme.ChronoMind</item>
+    </style>
+
 </resources>

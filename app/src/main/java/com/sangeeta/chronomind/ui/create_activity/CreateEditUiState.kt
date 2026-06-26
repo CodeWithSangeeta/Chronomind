@@ -1,6 +1,7 @@
 package com.sangeeta.chronomind.ui.create_activity
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -14,22 +15,22 @@ enum class TargetType(val label: String) {
 }
 
 enum class ActivityIconOption(val icon: ImageVector) {
-    STUDY(Icons.Rounded.Book),
+    STUDY(Icons.AutoMirrored.Rounded.MenuBook),
     EXERCISE(Icons.Rounded.FitnessCenter),
     READING(Icons.Rounded.Search),
     WORK(Icons.Rounded.Work),
     MEDITATION(Icons.Rounded.SelfImprovement),
     CREATIVE(Icons.Rounded.Palette),
-    GROWTH(Icons.Rounded.TrendingUp),
+    GROWTH(Icons.AutoMirrored.Rounded.TrendingUp),
     WRITING(Icons.Rounded.Edit),
     CODING(Icons.Rounded.Code),
     MUSIC(Icons.Rounded.Headphones),
-    WALKING(Icons.Rounded.DirectionsWalk),
-    RUNNING(Icons.Rounded.DirectionsRun),
-    PLANNING(Icons.Rounded.EventNote),
+    WALKING(Icons.AutoMirrored.Rounded.DirectionsWalk),
+    RUNNING(Icons.AutoMirrored.Rounded.DirectionsRun),
+    PLANNING(Icons.AutoMirrored.Rounded.EventNote),
     MEETING(Icons.Rounded.Groups),
     CALL(Icons.Rounded.Call),
-    JOURNAL(Icons.Rounded.MenuBook),
+    JOURNAL(Icons.AutoMirrored.Rounded.MenuBook),
     COOKING(Icons.Rounded.Restaurant),
     CLEANING(Icons.Rounded.CleaningServices),
     SLEEP(Icons.Rounded.Bedtime),
@@ -37,19 +38,18 @@ enum class ActivityIconOption(val icon: ImageVector) {
     OTHER(Icons.Rounded.MoreHoriz);
 
     companion object {
-        // Fix: Use String for name lookup
+        /**
+         * Resolves an icon option from its string name (used when loading from DB).
+         */
         fun fromName(name: String): ActivityIconOption {
             return entries.find { it.name == name } ?: GROWTH
         }
 
-        // Helper to find entry by ImageVector
+        /**
+         * Resolves an icon option from an ImageVector (used for UI state mapping).
+         */
         fun fromIcon(icon: ImageVector): ActivityIconOption {
             return entries.find { it.icon == icon } ?: GROWTH
-        }
-        
-        // Helper for TypeConverters to get a String name from an ImageVector
-        fun toName(icon: ImageVector): String {
-            return entries.find { it.icon == icon }?.name ?: GROWTH.name
         }
     }
 }
@@ -91,18 +91,26 @@ data class CreateEditUiState(
     val mode: CreateEditMode = CreateEditMode.CREATE,
     val activityId: Int = 0,
     val screenTitle: String = "New Activity",
+
     val activityName: String = "",
     val selectedIcon: ActivityIconOption = ActivityIconOption.GROWTH,
     val selectedColor: ActivityColorOption = ActivityColorOption.AMBER,
+
+
     val targetType: TargetType = TargetType.TIMER,
     val targetHours: Int = 0,
     val targetMinutes: Int = 0,
+
     val reminderEnabled: Boolean = false,
     val reminderTime: String = "07:00 PM",
+
+
     val isAdvancedExpanded: Boolean = false,
     val streakBehavior: StreakBehavior = StreakBehavior.CONTINUE,
     val completionStyle: CompletionStyle = CompletionStyle.MANUAL,
+
     val isSaving: Boolean = false,
+
     val showDeleteConfirm: Boolean = false,
 ) {
     val isValid: Boolean

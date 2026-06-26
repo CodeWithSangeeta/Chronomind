@@ -21,5 +21,7 @@ data class ActivityEntity(
     val targetType: String = "TIMER",
     val completionStyle: String = "MANUAL",
     val reminderEnabled: Boolean = false,
-    val reminderTime: String = "07:00 PM"
+    val reminderTime: String = "07:00 PM",
+    val hasPendingSession: Boolean = false,
+    val pendingSessionDate: String = ""
 )

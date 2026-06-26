@@ -109,7 +109,8 @@ class OnboardingViewModel @Inject constructor(
                         streakDays = 0,
                         lastActiveDate = today,
                         continueStreakOnMiss = continueStreak,
-                        orderIndex = index
+                        orderIndex = index,
+                        icon = area.icon,
                     )
                 }
 

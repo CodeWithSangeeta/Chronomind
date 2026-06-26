@@ -13,7 +13,6 @@ import com.sangeeta.chronomind.ui.history.HistoryScreen
 import com.sangeeta.chronomind.ui.home.HomeScreen
 import com.sangeeta.chronomind.ui.insights.InsightsScreen
 import com.sangeeta.chronomind.ui.settings.SettingsScreen
-import com.sangeeta.chronomind.ui.widget_setup.WidgetSetupScreen
 
 @Composable
 fun MainNavHost(
@@ -82,26 +81,14 @@ fun MainNavHost(
             )
         }
 
-        // ── Settings ────────────────────────────────────────────────────
         composable(route = ChronoRoutes.Settings.route) {
             SettingsScreen(
                 onBackClick = { navController.popBackStack() }
             )
-//            SettingsScreen(
-//                onBackClick = { navController.popBackStack() },
-//                onResetOnboarding = {
-//                    // Navigate to onboarding root and clear back stack
-//                   // navController.navigate(ChronoRoutes.Onboarding.route) {
-//                     //   popUpTo(0) { inclusive = true }
-//                    }
-//            )
+
         }
 
-        // ── Widget Setup ─────────────────────────────────────────────────
         composable(route = ChronoRoutes.WidgetSetup.route) {
-//            WidgetSetupScreen(
-//                onBackClick = { navController.popBackStack() }
-//            )
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.sangeeta.chronomind.ui.create_activity
 
-import android.R.attr.iconTint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable

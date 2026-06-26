@@ -19,7 +19,6 @@ class CreateEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // Nav arg: activityId = -1 means CREATE mode
     private val activityId: Int = savedStateHandle.get<Int>("activityId") ?: -1
 
     private val _uiState = MutableStateFlow(CreateEditUiState())
@@ -62,7 +61,6 @@ class CreateEditViewModel @Inject constructor(
         }
     }
 
-    // ── Field updaters ────────────────────────────────────────────────────────
 
     fun updateActivityName(name: String) {
         if (name.length <= 40) _uiState.update { it.copy(activityName = name) }
@@ -76,7 +74,6 @@ class CreateEditViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 targetType = type,
-                // When switching to STOPWATCH, force MANUAL completion
                 completionStyle = if (type == TargetType.STOPWATCH) CompletionStyle.MANUAL
                 else it.completionStyle
             )
@@ -99,7 +96,6 @@ class CreateEditViewModel @Inject constructor(
 
     fun showDeleteConfirm(show: Boolean) = _uiState.update { it.copy(showDeleteConfirm = show) }
 
-    // ── Save ─────────────────────────────────────────────────────────────────
 
     fun submit(onDone: () -> Unit) {
         val state = _uiState.value
@@ -121,8 +117,6 @@ class CreateEditViewModel @Inject constructor(
             }
         }
     }
-
-    // ── Delete ────────────────────────────────────────────────────────────────
 
     fun deleteActivity(onDone: () -> Unit) {
         viewModelScope.launch {

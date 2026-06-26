@@ -16,6 +16,9 @@ interface ActivityDao {
     @Query("SELECT * FROM activities WHERE isRunning = 1 LIMIT 1")
     fun observeRunning(): Flow<ActivityEntity?>
 
+    @Query("SELECT * FROM activities WHERE hasPendingSession = 1 AND pendingSessionDate != :today AND pendingSessionDate != ''")
+    suspend fun getStalePendingSessions(today: String): List<ActivityEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(activity: ActivityEntity): Long
 
@@ -31,10 +34,21 @@ interface ActivityDao {
     @Query("UPDATE activities SET streakDays = :streak, lastActiveDate = :date WHERE id = :id")
     suspend fun updateStreak(id: Int, streak: Int, date: String)
 
-    /**
-     * Resets streaks for activities where the user missed yesterday.
-     * yesterday: The date string (ISO) for the day before today.
-     */
+    @Query("""
+        UPDATE activities
+        SET hasPendingSession = :hasPending, pendingSessionDate = :pendingDate
+        WHERE id = :id
+    """)
+    suspend fun updatePendingFlag(id: Int, hasPending: Boolean, pendingDate: String)
+
+    @Query("""
+        UPDATE activities
+        SET elapsedSeconds = 0, isRunning = 0,
+            hasPendingSession = 0, pendingSessionDate = ''
+        WHERE id = :id
+    """)
+    suspend fun resetSession(id: Int)
+
     @Query("""
         UPDATE activities 
         SET streakDays = 0 

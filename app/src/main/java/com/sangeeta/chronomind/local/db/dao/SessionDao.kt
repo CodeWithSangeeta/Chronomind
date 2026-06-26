@@ -19,6 +19,17 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE dateLabel >= :from ORDER BY id DESC")
     fun observeSince(from: String): Flow<List<SessionEntity>>
 
+    @Query("""
+        SELECT * FROM sessions
+        WHERE activityId = :activityId
+          AND dateLabel = :date
+          AND isCompleted = 0
+        ORDER BY id DESC
+        LIMIT 1
+    """)
+    suspend fun findOpenSession(activityId: Int, date: String): SessionEntity?
+
+
     @Query("DELETE FROM sessions")
     suspend fun deleteAll()
 }
