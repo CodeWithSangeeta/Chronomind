@@ -1,10 +1,11 @@
 package com.sangeeta.chronomind.repository
 
+import com.sangeeta.chronomind.ui.model.ActivityDisplayState
+import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import com.sangeeta.chronomind.local.db.dao.ActivityDao
 import com.sangeeta.chronomind.local.db.dao.SessionDao
 import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 import com.sangeeta.chronomind.local.db.entity.SessionEntity
-import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -51,6 +52,7 @@ class ActivityRepository @Inject constructor(
 
     suspend fun resumeOrStart(activity: ActivityEntity) {
         val today = getTodayDateString()
+        if (activity.completedDate == today) return
         val now = nowMillis()
 
         dao.stopAll()
@@ -162,6 +164,7 @@ class ActivityRepository @Inject constructor(
 
         // 3. Reset to IDLE.
         dao.resetSession(activity.id)
+        dao.markCompletedDate(activity.id, today)
 
         selectActivity(activity.id)
     }
@@ -250,5 +253,63 @@ class ActivityRepository @Inject constructor(
             val targetSeconds = activity.targetMinutes * 60L
             now + ((targetSeconds - accumulated).coerceAtLeast(0L) * 1000L)
         }
+    }
+
+
+    fun buildDisplayState(activity: ActivityEntity, now: Long = System.currentTimeMillis()): ActivityDisplayState {
+        val today = getTodayDateString()
+        val isCompletedToday = activity.completedDate == today
+
+        val elapsed = computeElapsedSeconds(activity, now)
+        val remaining = computeRemainingSeconds(activity, now)
+
+        val sessionState = when {
+            isCompletedToday -> ActivitySessionState.COMPLETED_TODAY
+            activity.isRunning -> ActivitySessionState.RUNNING
+            activity.hasPendingSession && activity.pendingSessionDate == today -> ActivitySessionState.PENDING
+            else -> ActivitySessionState.IDLE
+        }
+
+        val displayTime = when {
+            isCompletedToday -> formatTime(elapsed)
+            activity.targetType == "STOPWATCH" -> formatTime(elapsed)
+            activity.isRunning -> formatTime(remaining)
+            sessionState == ActivitySessionState.PENDING -> formatTime(remaining)
+            else -> formatTime(activity.targetMinutes * 60L)
+        }
+
+        val progress = if (activity.targetType == "STOPWATCH" || activity.targetMinutes == 0) 0f
+        else (elapsed.toFloat() / (activity.targetMinutes * 60f)).coerceIn(0f, 1f)
+
+        return ActivityDisplayState(
+            activityId = activity.id,
+            name = activity.name,
+            icon = activity.icon,
+            colorHex = activity.colorHex,
+            sessionState = sessionState,
+            isStopwatch = activity.targetType == "STOPWATCH",
+            displayTime = displayTime,
+            progress = progress,
+            streakDays = activity.streakDays,
+            targetSeconds = activity.targetMinutes * 60L,
+            elapsedSeconds = elapsed,
+            remainingSeconds = if (activity.targetType == "STOPWATCH") 0L else remaining,
+            canStart = !isCompletedToday,
+            isRunning = activity.isRunning
+        )
+    }
+
+    private fun formatTime(seconds: Long): String {
+        val h = seconds / 3600
+        val m = (seconds % 3600) / 60
+        val s = seconds % 60
+        return if (h > 0) "%02d:%02d:%02d".format(h, m, s)
+        else "%02d:%02d".format(m, s)
+    }
+
+    suspend fun syncDayBoundaryIfNeeded() {
+        val today = getTodayDateString()
+        val stalePending = dao.getStalePendingSessions(today)
+        stalePending.forEach { abandonToHistory(it) }
     }
 }

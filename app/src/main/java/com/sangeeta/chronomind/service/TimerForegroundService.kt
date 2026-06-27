@@ -7,10 +7,10 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
-import androidx.core.app.NotificationCompat
 import com.sangeeta.chronomind.MainActivity
 import com.sangeeta.chronomind.R
 import com.sangeeta.chronomind.repository.ActivityRepository
+import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -36,22 +36,30 @@ class TimerForegroundService : Service() {
         const val ACTION_START = "ACTION_TIMER_START"
         const val ACTION_PAUSE = "ACTION_TIMER_PAUSE"
         const val ACTION_STOP = "ACTION_TIMER_STOP"
+        const val ACTION_COMPLETE = "ACTION_TIMER_COMPLETE"
 
         const val CHANNEL_ID = "chronomind_timer_channel"
         const val NOTIF_ID = 1001
 
-        fun startIntent(ctx: Context) = Intent(ctx, TimerForegroundService::class.java).apply {
-            action = ACTION_START
-        }
+        fun startIntent(ctx: Context) =
+            Intent(ctx, TimerForegroundService::class.java).apply {
+                action = ACTION_START
+            }
 
-        fun pauseIntent(ctx: Context) = Intent(ctx, TimerForegroundService::class.java).apply {
-            action = ACTION_PAUSE
-        }
+        fun pauseIntent(ctx: Context) =
+            Intent(ctx, TimerForegroundService::class.java).apply {
+                action = ACTION_PAUSE
+            }
 
-        // Domain rule: STOP from notification behaves same as pause.
-        fun stopIntent(ctx: Context) = Intent(ctx, TimerForegroundService::class.java).apply {
-            action = ACTION_STOP
-        }
+        fun stopIntent(ctx: Context) =
+            Intent(ctx, TimerForegroundService::class.java).apply {
+                action = ACTION_STOP
+            }
+
+        fun completeIntent(ctx: Context) =
+            Intent(ctx, TimerForegroundService::class.java).apply {
+                action = ACTION_COMPLETE
+            }
     }
 
     override fun onCreate() {
@@ -64,13 +72,14 @@ class TimerForegroundService : Service() {
             ACTION_START -> startTicking()
             ACTION_PAUSE -> pauseTicking()
             ACTION_STOP -> pauseTicking()
+            ACTION_COMPLETE -> completeFromNotification()
             else -> startTicking()
         }
         return START_STICKY
     }
 
     private fun startTicking() {
-        startForeground(NOTIF_ID, buildNotification("Session running"))
+        startForeground(NOTIF_ID, buildNotification("Session running").build())
 
         tickJob?.cancel()
         tickJob = serviceScope.launch {
@@ -85,28 +94,28 @@ class TimerForegroundService : Service() {
 
                 val now = System.currentTimeMillis()
                 val elapsed = activityRepo.computeElapsedSeconds(running, now)
-                activityRepo.updateElapsedSnapshot(running.id, elapsed, running = true)
+                activityRepo.updateElapsedSnapshot(running.id, elapsed, true)
 
-                val isStopwatch = running.targetType == "STOPWATCH"
-                if (isStopwatch) {
-                    updateNotification(formatTime(elapsed))
-                } else {
-                    val remaining = activityRepo.computeRemainingSeconds(running, now)
-                    updateNotification(formatTime(remaining))
+                val refreshed = activityRepo.observeById(running.id).firstOrNull() ?: running
+                val displayState = activityRepo.buildDisplayState(refreshed, now)
+                updateNotification(displayState.displayTime)
 
-                    val isAutoFinishTimer = running.completionStyle == "TIMER_END" || running.completionStyle == "TIMEREND"
-                    if (isAutoFinishTimer && remaining <= 0L) {
-                        activityRepo.completeSession(running, finalElapsed = elapsed)
-                        stopForeground(STOP_FOREGROUND_REMOVE)
-                        stopSelf()
-                        break
-                    }
+                val isTimer = running.targetType != "STOPWATCH"
+                val remaining = activityRepo.computeRemainingSeconds(running, now)
+                val shouldAutoFinish = isTimer && remaining <= 0L
+
+                if (shouldAutoFinish) {
+                    activityRepo.completeSession(running, finalElapsed = elapsed)
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                    stopSelf()
+                    break
                 }
 
                 delay(1000L)
             }
         }
     }
+
     private fun pauseTicking() {
         tickJob?.cancel()
 
@@ -120,36 +129,63 @@ class TimerForegroundService : Service() {
         }
     }
 
-    private fun formatTime(seconds: Long): String {
-        val h = seconds / 3600
-        val m = (seconds % 3600) / 60
-        val s = seconds % 60
-        return if (h > 0) {
-            String.format("%02d:%02d:%02d", h, m, s)
-        } else {
-            String.format("%02d:%02d", m, s)
+    private fun completeFromNotification() {
+        tickJob?.cancel()
+
+        serviceScope.launch {
+            val running = activityRepo.observeRunning().firstOrNull()
+            if (running != null) {
+                val elapsed = activityRepo.computeElapsedSeconds(running)
+                activityRepo.completeSession(running, finalElapsed = elapsed)
+            }
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
         }
     }
 
-    private fun buildNotification(contentText: String) =
-        NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(contentText: String): NotificationCompat.Builder {
+        val openAppIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val pausePendingIntent = PendingIntent.getService(
+            this,
+            1,
+            pauseIntent(this),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val completePendingIntent = PendingIntent.getService(
+            this,
+            2,
+            completeIntent(this),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("ChronoMind Focus Session")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setOngoing(true)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    this,
-                    0,
-                    Intent(this, MainActivity::class.java),
-                    PendingIntent.FLAG_IMMUTABLE
-                )
+            .setContentIntent(openAppIntent)
+            .addAction(
+                R.drawable.ic_launcher_foreground,
+                "Pause",
+                pausePendingIntent
             )
-            .build()
+            .addAction(
+                R.drawable.ic_launcher_foreground,
+                "Mark Complete",
+                completePendingIntent
+            )
+    }
 
     private fun updateNotification(timeText: String) {
         getSystemService(NotificationManager::class.java)
-            .notify(NOTIF_ID, buildNotification(timeText))
+            .notify(NOTIF_ID, buildNotification(timeText).build())
     }
 
     private fun createNotificationChannel() {

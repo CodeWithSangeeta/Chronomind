@@ -14,6 +14,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.sangeeta.chronomind.ui.model.ActivityDisplayState
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -25,7 +29,30 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    val heroDisplayState: StateFlow<ActivityDisplayState?> =
+        combine(
+            activityRepo.observeRunning(),
+            activityRepo.selectedActivityId
+        ) { running, selectedId ->
+            running?.id ?: selectedId
+        }.flatMapLatest { activityId ->
+            if (activityId == null) {
+                flowOf(null)
+            } else {
+                activityRepo.observeById(activityId).map { entity ->
+                    entity?.let { activityRepo.buildDisplayState(it) }
+                }
+            }
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
     init {
+        viewModelScope.launch {
+            activityRepo.syncDayBoundaryIfNeeded()
+        }
         observeHomeData()
     }
 
@@ -76,9 +103,10 @@ class HomeViewModel @Inject constructor(
     }
 
     fun startFocus() {
-        val selected = uiState.value.selectedActivity ?: return
+        val activityId = heroDisplayState.value?.activityId ?: uiState.value.selectedActivity?.id ?: return
         viewModelScope.launch {
-            val entity = activityRepo.observeById(selected.id).firstOrNull() ?: return@launch
+            val entity = activityRepo.observeById(activityId).firstOrNull() ?: return@launch
+            if (!activityRepo.buildDisplayState(entity).canStart) return@launch
             activityRepo.resumeOrStart(entity)
             startTimerService()
         }
@@ -88,13 +116,25 @@ class HomeViewModel @Inject constructor(
         context.startService(TimerForegroundService.pauseIntent(context))
     }
 
-    fun finishSession() {
+    private val _showFinishDialog = MutableStateFlow(false)
+    val showFinishDialog: StateFlow<Boolean> = _showFinishDialog.asStateFlow()
+
+    fun requestFinish() {
+        _showFinishDialog.value = true
+    }
+
+    fun confirmFinish() {
+        _showFinishDialog.value = false
         val running = uiState.value.runningActivity ?: return
         viewModelScope.launch {
             val entity = activityRepo.observeById(running.id).firstOrNull() ?: return@launch
             activityRepo.completeSession(entity)
             context.startService(TimerForegroundService.stopIntent(context))
         }
+    }
+
+    fun cancelFinish() {
+        _showFinishDialog.value = false
     }
 
 

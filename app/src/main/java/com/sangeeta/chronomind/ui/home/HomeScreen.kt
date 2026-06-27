@@ -13,8 +13,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,7 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sangeeta.chronomind.R
+import com.sangeeta.chronomind.ui.components.ActivityCard
 import com.sangeeta.chronomind.ui.components.ChronoTimerRing
+import com.sangeeta.chronomind.ui.model.ActivityDisplayState
+import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
@@ -48,23 +53,29 @@ fun HomeScreen(
     onNavigateToWidgetPreview: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val heroDisplayState by viewModel.heroDisplayState.collectAsStateWithLifecycle()
+    val showFinishDialog by viewModel.showFinishDialog.collectAsStateWithLifecycle()
 
     HomeScreenContent(
         uiState = uiState,
+        heroDisplayState = heroDisplayState,
+        showFinishDialog = showFinishDialog,
         onNavigateToSettings = onNavigateToSettings,
         onNavigateToAllActivities = onNavigateToAllActivities,
         onQuickActionClick = { action ->
             when (action.id) {
-                "new_activity"   -> onNavigateToCreateActivity()
-                "history"        -> onNavigateToHistory()
-                "insights"       -> onNavigateToInsights()
-                "widget_setup"   -> onNavigateToWidgetSetup()
+                "new_activity" -> onNavigateToCreateActivity()
+                "history" -> onNavigateToHistory()
+                "insights" -> onNavigateToInsights()
+                "widget_setup" -> onNavigateToWidgetSetup()
                 "widget_preview" -> onNavigateToWidgetPreview()
             }
         },
         onStartFocus = viewModel::startFocus,
         onPause = viewModel::pauseSession,
-        onFinish = viewModel::finishSession,
+        onFinish = viewModel::requestFinish,
+        onConfirmFinish = viewModel::confirmFinish,
+        onCancelFinish = viewModel::cancelFinish,
         onRecentActivityClick = viewModel::onRecentActivitySelected,
         onStartActivityDirectly = viewModel::startActivityDirectly
     )
@@ -73,15 +84,19 @@ fun HomeScreen(
 @Composable
 private fun HomeScreenContent(
     uiState: HomeUiState,
+    heroDisplayState: ActivityDisplayState?,
+    showFinishDialog: Boolean,
     onNavigateToSettings: () -> Unit,
     onNavigateToAllActivities: () -> Unit,
     onQuickActionClick: (HomeQuickAction) -> Unit,
     onStartFocus: () -> Unit,
     onPause: () -> Unit,
     onFinish: () -> Unit,
+    onConfirmFinish: () -> Unit,
+    onCancelFinish: () -> Unit,
     onRecentActivityClick: (Int) -> Unit,
     onStartActivityDirectly: (Int) -> Unit,
-) {
+){
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -101,15 +116,12 @@ private fun HomeScreenContent(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
-                TimerHeroCard(
-                    runningActivity = uiState.runningActivity,
-                    selectedActivity = uiState.selectedActivity
-                )
+                TimerHeroCard(heroState = heroDisplayState)
             }
 
             item {
                 SessionControls(
-                    isRunning = uiState.runningActivity != null,
+                    heroState = heroDisplayState,
                     onStartFocus = onStartFocus,
                     onPause = onPause,
                     onFinish = onFinish
@@ -153,114 +165,135 @@ private fun HomeScreenContent(
             item { Spacer(modifier = Modifier.height(6.dp)) }
         }
     }
-}
 
 
-@Composable
-fun ActivityCard(
-    activity: ActivityUiModel,
-    isSelected: Boolean,
-    onCardClick: () -> Unit,
-    onActionClick: () -> Unit
-) {
-    val borderColor = when {
-        activity.isRunning -> AuraColors.YellowPrimary
-        isSelected         -> AuraColors.YellowPrimary.copy(alpha = 0.55f)
-        else               -> AuraColors.CardBorderDefault
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF141414), AuraColors.SurfaceCard)
-                )
-            )
-            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(24.dp))
-            .clickable(onClick = onCardClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(AuraColors.SurfaceCardLight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = activity.icon,
-                    contentDescription = null,
-                    tint = AuraColors.YellowPrimary,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = activity.name,
-                    style = AuraTypography.TitleMedium,
-                    color = AuraColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "${activity.targetSeconds / 60} min • ${activity.lastActiveDate}",
-                    style = AuraTypography.BodyMedium,
-                    color = AuraColors.TextSecondary
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "${(activity.progress * 100).toInt()}%",
-                        style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = AuraColors.YellowPrimary
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(5.dp)
-                            .clip(RoundedCornerShape(50.dp))
-                            .background(AuraColors.TimerTrack)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(activity.progress.coerceIn(0f, 1f))
-                                .height(5.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(AuraColors.YellowPrimary)
-                        )
-                    }
+    if (showFinishDialog) {
+        AlertDialog(
+            onDismissRequest = onCancelFinish,
+            title = { Text("Mark as complete?") },
+            text = {
+                Text("This will finish today's session. You won't be able to run this activity again today.")
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirmFinish) {
+                    Text("Mark Complete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCancelFinish) {
+                    Text("Cancel")
                 }
             }
-
-            val actionIcon = if (activity.isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow
-            val actionDesc = if (activity.isRunning) "Pause ${activity.name}" else "Select ${activity.name}"
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(AuraColors.SurfaceCardLight)
-                    .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
-                    .clickable(onClick = onActionClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = actionIcon,
-                    contentDescription = actionDesc,
-                    tint = AuraColors.YellowPrimary
-                )
-            }
-        }
+        )
     }
 }
+
+
+//@Composable
+//fun ActivityCard(
+//    activity: ActivityUiModel,
+//    isSelected: Boolean,
+//    onCardClick: () -> Unit,
+//    onActionClick: () -> Unit
+//) {
+//    val borderColor = when {
+//        activity.isRunning -> AuraColors.YellowPrimary
+//        isSelected         -> AuraColors.YellowPrimary.copy(alpha = 0.55f)
+//        else               -> AuraColors.CardBorderDefault
+//    }
+//
+//    Box(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .clip(RoundedCornerShape(24.dp))
+//            .background(
+//                Brush.verticalGradient(
+//                    colors = listOf(Color(0xFF141414), AuraColors.SurfaceCard)
+//                )
+//            )
+//            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(24.dp))
+//            .clickable(onClick = onCardClick)
+//            .padding(horizontal = 16.dp, vertical = 16.dp)
+//    ) {
+//        Row(
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.spacedBy(14.dp)
+//        ) {
+//            Box(
+//                modifier = Modifier
+//                    .size(52.dp)
+//                    .clip(CircleShape)
+//                    .background(AuraColors.SurfaceCardLight),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Icon(
+//                    imageVector = activity.icon,
+//                    contentDescription = null,
+//                    tint = AuraColors.YellowPrimary,
+//                    modifier = Modifier.size(32.dp)
+//                )
+//            }
+//
+//            Column(
+//                modifier = Modifier.weight(1f),
+//                verticalArrangement = Arrangement.spacedBy(6.dp)
+//            ) {
+//                Text(
+//                    text = activity.name,
+//                    style = AuraTypography.TitleMedium,
+//                    color = AuraColors.TextPrimary,
+//                    maxLines = 1,
+//                    overflow = TextOverflow.Ellipsis
+//                )
+//                Text(
+//                    text = "${activity.targetSeconds / 60} min • ${activity.lastActiveDate}",
+//                    style = AuraTypography.BodyMedium,
+//                    color = AuraColors.TextSecondary
+//                )
+//                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+//                    Text(
+//                        text = "${(activity.progress * 100).toInt()}%",
+//                        style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
+//                        color = AuraColors.YellowPrimary
+//                    )
+//                    Box(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .height(5.dp)
+//                            .clip(RoundedCornerShape(50.dp))
+//                            .background(AuraColors.TimerTrack)
+//                    ) {
+//                        Box(
+//                            modifier = Modifier
+//                                .fillMaxWidth(activity.progress.coerceIn(0f, 1f))
+//                                .height(5.dp)
+//                                .clip(RoundedCornerShape(50.dp))
+//                                .background(AuraColors.YellowPrimary)
+//                        )
+//                    }
+//                }
+//            }
+//
+//            val actionIcon = if (activity.isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow
+//            val actionDesc = if (activity.isRunning) "Pause ${activity.name}" else "Select ${activity.name}"
+//            Box(
+//                modifier = Modifier
+//                    .size(42.dp)
+//                    .clip(CircleShape)
+//                    .background(AuraColors.SurfaceCardLight)
+//                    .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
+//                    .clickable(onClick = onActionClick),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Icon(
+//                    imageVector = actionIcon,
+//                    contentDescription = actionDesc,
+//                    tint = AuraColors.YellowPrimary
+//                )
+//            }
+//        }
+//    }
+//}
 
 
 @Composable
@@ -310,11 +343,18 @@ private fun HomeHeader(
 
 @Composable
 private fun TimerHeroCard(
-    runningActivity: ActivityUiModel?,
-    selectedActivity: ActivityUiModel?
+    heroState: ActivityDisplayState?
 ) {
-    val heroActivity = runningActivity ?: selectedActivity
-    val isRunning = runningActivity != null
+    val activityName = heroState?.name?.uppercase() ?: "NO ACTIVITY SELECTED"
+    val timerText = heroState?.displayTime ?: "00:00"
+    val progress = heroState?.progress ?: 0f
+
+    val subLabel = when (heroState?.sessionState) {
+        ActivitySessionState.RUNNING -> "IN SESSION"
+        ActivitySessionState.PENDING -> "PENDING"
+        ActivitySessionState.COMPLETED_TODAY -> "COMPLETED TODAY"
+        else -> "START WHEN READY"
+    }
 
     Box(
         modifier = Modifier
@@ -330,15 +370,16 @@ private fun TimerHeroCard(
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             ChronoTimerRing(
-                progress = heroActivity?.progress ?: 0f,
-                timerText = heroActivity?.elapsedFormatted ?: "00:00",
-                subLabel = if (isRunning) "IN SESSION" else "START WHEN READY",
-                activityName = heroActivity?.name?.uppercase() ?: "NO ACTIVITY SELECTED",
+                progress = progress,
+                timerText = timerText,
+                subLabel = subLabel,
+                activityName = activityName,
                 sizeDp = 250.dp
             )
-            if (!isRunning && heroActivity != null) {
+
+            if (heroState != null && heroState.sessionState != ActivitySessionState.RUNNING) {
                 Text(
-                    text = heroActivity.name,
+                    text = heroState.name,
                     style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.Medium),
                     color = AuraColors.YellowPrimary
                 )
@@ -350,25 +391,54 @@ private fun TimerHeroCard(
 
 @Composable
 private fun SessionControls(
-    isRunning: Boolean,
+    heroState: ActivityDisplayState?,
     onStartFocus: () -> Unit,
     onPause: () -> Unit,
     onFinish: () -> Unit
 ) {
-    if (!isRunning) {
-        PremiumPrimaryButton(text = "Start Focus", icon = Icons.Rounded.PlayArrow, onClick = onStartFocus)
-    } else {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            PremiumPillButton(
-                text = "Pause", icon = Icons.Rounded.Pause,
-                isPrimary = true, modifier = Modifier.weight(1f), onClick = onPause
+    when {
+        heroState == null -> {
+            PremiumPrimaryButton(
+                text = "Start Focus",
+                icon = Icons.Rounded.PlayArrow,
+                onClick = onStartFocus
             )
-            PremiumPillButton(
-                text = "Finish", icon = Icons.Rounded.Stop,
-                modifier = Modifier.weight(1f), onClick = onFinish
+        }
+
+        heroState.sessionState == ActivitySessionState.COMPLETED_TODAY -> {
+            PremiumPrimaryButton(
+                text = "Completed Today",
+                icon = Icons.Rounded.CheckCircle,
+                onClick = {}
+            )
+        }
+
+        heroState.isRunning -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                PremiumPillButton(
+                    text = "Pause",
+                    icon = Icons.Rounded.Pause,
+                    isPrimary = true,
+                    modifier = Modifier.weight(1f),
+                    onClick = onPause
+                )
+                PremiumPillButton(
+                    text = "Finish",
+                    icon = Icons.Rounded.Stop,
+                    modifier = Modifier.weight(1f),
+                    onClick = onFinish
+                )
+            }
+        }
+
+        else -> {
+            PremiumPrimaryButton(
+                text = "Start Focus",
+                icon = Icons.Rounded.PlayArrow,
+                onClick = onStartFocus
             )
         }
     }

@@ -34,6 +34,9 @@ interface ActivityDao {
     @Query("UPDATE activities SET streakDays = :streak, lastActiveDate = :date WHERE id = :id")
     suspend fun updateStreak(id: Int, streak: Int, date: String)
 
+    @Query("UPDATE activities SET completedDate = :date WHERE id = :id")
+    suspend fun markCompletedDate(id: Int, date: String)
+
     @Query("""
         UPDATE activities
         SET hasPendingSession = :hasPending, pendingSessionDate = :pendingDate
