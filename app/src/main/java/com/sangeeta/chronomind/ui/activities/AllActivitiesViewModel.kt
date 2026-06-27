@@ -1,6 +1,7 @@
 package com.sangeeta.chronomind.ui.activities
 
 import android.content.Context
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.repository.ActivityRepository
@@ -96,5 +97,14 @@ class AllActivitiesViewModel @Inject constructor(
         "today" -> 100
         "yesterday" -> 90
         else -> 0
+    }
+
+    private fun startTimerService() {
+        val intent = TimerForegroundService.startIntent(context)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
     }
 }
