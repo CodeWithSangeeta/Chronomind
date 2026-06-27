@@ -72,64 +72,37 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onRecentActivitySelected(activityId: Int) {
-        viewModelScope.launch {
-            val running = uiState.value.runningActivity
-            if (running != null && running.id != activityId) {
-                activityRepo.updateTimer(id = running.id, elapsed = running.elapsedSeconds, running = false)
-                context.startService(TimerForegroundService.pauseIntent(context))
-            }
-            activityRepo.selectActivity(activityId)
-        }
+        activityRepo.selectActivity(activityId)
     }
 
     fun startFocus() {
         val selected = uiState.value.selectedActivity ?: return
         viewModelScope.launch {
-            activityRepo.stopAll()
-            activityRepo.updateTimer(id = selected.id, elapsed = selected.elapsedSeconds, running = true)
-            activityRepo.selectActivity(selected.id)
+            val entity = activityRepo.observeById(selected.id).firstOrNull() ?: return@launch
+            activityRepo.resumeOrStart(entity)
             startTimerService()
         }
     }
 
     fun pauseSession() {
-        val running = uiState.value.runningActivity ?: return
-        viewModelScope.launch {
-            activityRepo.updateTimer(id = running.id, elapsed = running.elapsedSeconds, running = false)
-            activityRepo.selectActivity(running.id)
-            context.startService(TimerForegroundService.pauseIntent(context))
-        }
+        context.startService(TimerForegroundService.pauseIntent(context))
     }
 
     fun finishSession() {
         val running = uiState.value.runningActivity ?: return
         viewModelScope.launch {
             val entity = activityRepo.observeById(running.id).firstOrNull() ?: return@launch
-            activityRepo.completeSession(
-                activity = entity,
-                finalElapsed = running.elapsedSeconds
-            )
+            activityRepo.completeSession(entity)
             context.startService(TimerForegroundService.stopIntent(context))
         }
     }
 
-//    fun finishSession() {
-//        val running = uiState.value.runningActivity ?: return
-//        viewModelScope.launch {
-//            activityRepo.logSession(running, isCompleted = true)
-//            activityRepo.updateTimer(id = running.id, elapsed = 0L, running = false)
-//            activityRepo.updateStreak(id = running.id, streak = running.streakDays + 1, date = "Today")
-//            activityRepo.selectActivity(running.id)
-//            context.startService(TimerForegroundService.stopIntent(context))
-//        }
-//    }
+
 
     fun startActivityDirectly(activityId: Int) {
         viewModelScope.launch {
-            activityRepo.stopAll()
-            activityRepo.selectActivity(activityId)
             val entity = activityRepo.observeById(activityId).firstOrNull() ?: return@launch
-            activityRepo.updateTimer(id = activityId, elapsed = entity.elapsedSeconds, running = true)
+            activityRepo.switchToActivity(entity)
             startTimerService()
         }
     }

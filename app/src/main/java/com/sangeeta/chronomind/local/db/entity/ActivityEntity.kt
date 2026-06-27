@@ -23,5 +23,8 @@ data class ActivityEntity(
     val reminderEnabled: Boolean = false,
     val reminderTime: String = "07:00 PM",
     val hasPendingSession: Boolean = false,
-    val pendingSessionDate: String = ""
+    val pendingSessionDate: String = "",
+    val sessionStartedAtEpochMillis: Long? = null,
+    val sessionEndsAtEpochMillis: Long? = null,
+    val accumulatedElapsedBeforeStartSeconds: Long = 0L
 )

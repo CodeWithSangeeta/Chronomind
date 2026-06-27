@@ -45,53 +45,42 @@ class ActivityRepository @Inject constructor(
     suspend fun stopAll() = dao.stopAll()
 
     // Fine-grained tick update — called every second by the service.
-    suspend fun updateTimer(id: Int, elapsed: Long, running: Boolean) =
-        dao.updateTimer(id, elapsed, running)
+    suspend fun updateElapsedSnapshot(id: Int, elapsed: Long, running: Boolean) =
+        dao.updateElapsedSnapshot(id, elapsed, running)
 
-    // ── Session state machine ──────────────────────────────────────────────
-    //
-    //  States an activity can be in:
-    //
-    //  IDLE          elapsedSeconds=0, isRunning=false, hasPendingSession=false
-    //  RUNNING       elapsedSeconds>0, isRunning=true,  hasPendingSession=false
-    //  PENDING       elapsedSeconds>0, isRunning=false, hasPendingSession=true
-    //  COMPLETED     → written to sessions table, then reset to IDLE
-    //  ABANDONED     → written to sessions table as incomplete, then reset to IDLE
-    //
-    //  Transitions:
-    //    startFresh / resumeOrStart → RUNNING
-    //    pauseSession               → PENDING
-    //    completeSession            → COMPLETED (then IDLE)
-    //    abandonToHistory           → ABANDONED (then IDLE)
-    //    switchToActivity           → pauses current (→ PENDING), starts next (→ RUNNING)
 
-    /**
-     * Start an activity from scratch (elapsed = 0) or resume an existing
-     * pending session from today.
-     *
-     * Rules:
-     * - If [activity].hasPendingSession AND pendingSessionDate == today → resume (keep elapsed).
-     * - Otherwise → start fresh (reset elapsed to 0).
-     *
-     * In both cases, stop any currently running activity first.
-     * The currently running activity is just paused in-memory (isRunning=false),
-     * NOT pushed to history — that is the caller's responsibility via switchToActivity().
-     */
     suspend fun resumeOrStart(activity: ActivityEntity) {
         val today = getTodayDateString()
+        val now = nowMillis()
+
         dao.stopAll()
 
         val isSameDayResume = activity.hasPendingSession &&
                 activity.pendingSessionDate == today &&
                 activity.elapsedSeconds > 0L
 
-        val elapsed = if (isSameDayResume) activity.elapsedSeconds else 0L
+        val accumulated = if (isSameDayResume) {
+            activity.elapsedSeconds
+        } else {
+            0L
+        }
+        val endsAt = computeEndsAt(activity, now, accumulated)
 
-        dao.updateTimer(activity.id, elapsed, running = true)
+//        val endsAt = if (activity.targetType != "STOPWATCH") {
+//            val targetSeconds = activity.targetMinutes * 60L
+//            now + ((targetSeconds - accumulated).coerceAtLeast(0L) * 1000L)
+//        } else {
+//            null
+//        }
 
-        // If we reset elapsed, also clear the stale pending flag.
+        dao.startSession(
+            id = activity.id,
+            startedAt = now,
+            endsAt = endsAt,
+            accumulatedElapsed = accumulated
+        )
         if (!isSameDayResume) {
-            dao.updatePendingFlag(activity.id, hasPending = false, pendingDate = "")
+            dao.updateElapsedSnapshot(activity.id, 0L, true)
         }
 
         selectActivity(activity.id)
@@ -108,8 +97,14 @@ class ActivityRepository @Inject constructor(
      */
     suspend fun pauseSession(activity: ActivityEntity) {
         val today = getTodayDateString()
-        dao.updateTimer(activity.id, activity.elapsedSeconds, running = false)
-        dao.updatePendingFlag(activity.id, hasPending = true, pendingDate = today)
+        val elapsed = computeElapsedSeconds(activity)
+
+        dao.pauseSession(
+            id = activity.id,
+            elapsedSeconds = elapsed,
+            pendingDate = today
+        )
+
         selectActivity(activity.id)
     }
 
@@ -143,9 +138,9 @@ class ActivityRepository @Inject constructor(
      *  2. Update streak.
      *  3. Reset activity to IDLE (elapsed=0, isRunning=false, pending cleared).
      */
-    suspend fun completeSession(activity: ActivityEntity, finalElapsed: Long) {
+    suspend fun completeSession(activity: ActivityEntity, finalElapsed: Long? = null) {
         val today = getTodayDateString()
-
+        val actualElapsed = finalElapsed ?: computeElapsedSeconds(activity)
         // 1. Write to history as completed.
         sessionDao.insert(
             SessionEntity(
@@ -153,7 +148,7 @@ class ActivityRepository @Inject constructor(
                 activityName = activity.name,
                 activityIcon = activity.icon,
                 activityColorHex = activity.colorHex,
-                elapsedSeconds = finalElapsed,
+                elapsedSeconds = actualElapsed,
                 targetSeconds = activity.targetMinutes * 60L,
                 isCompleted = true,
                 dateLabel = today
@@ -171,27 +166,18 @@ class ActivityRepository @Inject constructor(
         selectActivity(activity.id)
     }
 
-    /**
-     * Abandon a pending session at end-of-day (or when explicitly discarded).
-     *
-     * Called by:
-     *  - StreakResetWorker at midnight for stale pending sessions.
-     *
-     * Only writes to history if meaningful elapsed time exists (> 10 seconds)
-     * to avoid cluttering history with accidental taps.
-     *
-     * The session is written as isCompleted = false with partial elapsed time.
-     * The UI will show an incomplete progress bar based on elapsedSeconds / targetSeconds.
-     */
+
     suspend fun abandonToHistory(activity: ActivityEntity) {
-        if (activity.elapsedSeconds > 10L) {
+        val actualElapsed = if (activity.isRunning) computeElapsedSeconds(activity) else activity.elapsedSeconds
+
+        if (actualElapsed > 10L) {
             sessionDao.insert(
                 SessionEntity(
                     activityId = activity.id,
                     activityName = activity.name,
                     activityIcon = activity.icon,
                     activityColorHex = activity.colorHex,
-                    elapsedSeconds = activity.elapsedSeconds,
+                    elapsedSeconds = actualElapsed,
                     targetSeconds = activity.targetMinutes * 60L,
                     isCompleted = false,
                     dateLabel = activity.pendingSessionDate.ifEmpty { getTodayDateString() }
@@ -199,7 +185,6 @@ class ActivityRepository @Inject constructor(
             )
         }
 
-        // Reset to IDLE regardless of whether we wrote to history.
         dao.resetSession(activity.id)
     }
 
@@ -241,5 +226,29 @@ class ActivityRepository @Inject constructor(
         val cal = Calendar.getInstance()
         cal.add(Calendar.DAY_OF_YEAR, -1)
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(cal.time)
+    }
+
+    private fun nowMillis(): Long = System.currentTimeMillis()
+
+    fun computeElapsedSeconds(activity: ActivityEntity, now: Long = nowMillis()): Long {
+        if (!activity.isRunning || activity.sessionStartedAtEpochMillis == null) {
+            return activity.accumulatedElapsedBeforeStartSeconds
+        }
+        val delta = ((now - activity.sessionStartedAtEpochMillis) / 1000L).coerceAtLeast(0L)
+        return activity.accumulatedElapsedBeforeStartSeconds + delta
+    }
+
+    fun computeRemainingSeconds(activity: ActivityEntity, now: Long = nowMillis()): Long {
+        val endsAt = activity.sessionEndsAtEpochMillis ?: return 0L
+        return ((endsAt - now) / 1000L).coerceAtLeast(0L)
+    }
+
+    private fun computeEndsAt(activity: ActivityEntity, now: Long, accumulated: Long): Long? {
+        return if (activity.targetType == "STOPWATCH") {
+            null
+        } else {
+            val targetSeconds = activity.targetMinutes * 60L
+            now + ((targetSeconds - accumulated).coerceAtLeast(0L) * 1000L)
+        }
     }
 }

@@ -42,11 +42,16 @@ interface ActivityDao {
     suspend fun updatePendingFlag(id: Int, hasPending: Boolean, pendingDate: String)
 
     @Query("""
-        UPDATE activities
-        SET elapsedSeconds = 0, isRunning = 0,
-            hasPendingSession = 0, pendingSessionDate = ''
-        WHERE id = :id
-    """)
+    UPDATE activities
+    SET elapsedSeconds = 0,
+        isRunning = 0,
+        hasPendingSession = 0,
+        pendingSessionDate = '',
+        sessionStartedAtEpochMillis = NULL,
+        sessionEndsAtEpochMillis = NULL,
+        accumulatedElapsedBeforeStartSeconds = 0
+    WHERE id = :id
+""")
     suspend fun resetSession(id: Int)
 
     @Query("""
@@ -71,4 +76,51 @@ interface ActivityDao {
 
     @Query("DELETE FROM activities")
     suspend fun deleteAll()
+
+
+    @Query("""
+    UPDATE activities
+    SET isRunning = 1,
+        sessionStartedAtEpochMillis = :startedAt,
+        sessionEndsAtEpochMillis = :endsAt,
+        accumulatedElapsedBeforeStartSeconds = :accumulatedElapsed,
+        hasPendingSession = 0,
+        pendingSessionDate = ''
+    WHERE id = :id
+""")
+    suspend fun startSession(
+        id: Int,
+        startedAt: Long,
+        endsAt: Long?,
+        accumulatedElapsed: Long
+    )
+
+    @Query("""
+    UPDATE activities
+    SET elapsedSeconds = :elapsedSeconds,
+        isRunning = 0,
+        sessionStartedAtEpochMillis = NULL,
+        sessionEndsAtEpochMillis = NULL,
+        accumulatedElapsedBeforeStartSeconds = :elapsedSeconds,
+        hasPendingSession = 1,
+        pendingSessionDate = :pendingDate
+    WHERE id = :id
+""")
+    suspend fun pauseSession(
+        id: Int,
+        elapsedSeconds: Long,
+        pendingDate: String
+    )
+
+    @Query("""
+    UPDATE activities
+    SET elapsedSeconds = :elapsedSeconds,
+        isRunning = :running
+    WHERE id = :id
+""")
+    suspend fun updateElapsedSnapshot(
+        id: Int,
+        elapsedSeconds: Long,
+        running: Boolean
+    )
 }
