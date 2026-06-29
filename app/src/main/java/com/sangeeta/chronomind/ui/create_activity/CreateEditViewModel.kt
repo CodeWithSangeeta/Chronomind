@@ -161,7 +161,7 @@ class CreateEditViewModel @Inject constructor(
                 orderIndex = if (isEditMode) current.existingOrderIndex else Int.MAX_VALUE,
                 icon = current.selectedIcon.icon,
                 colorHex = current.selectedColor.hex,
-                targetType = if (current.targetType == TargetType.STOPWATCH) "STOPWATCH" else "TIMER",
+                targetType = if (current.targetType == TargetType.TIMER) "TIMER" else "STOPWATCH",
                 completionStyle = if (current.completionStyle == CompletionStyle.AUTO_CHECK) "TIMEREND" else "MANUAL",
                 reminderEnabled = current.reminderEnabled,
                 reminderTime = current.reminderTime,

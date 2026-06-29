@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,17 +46,16 @@ fun SegmentedTargetSelector(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(AuraColors.BackgroundDark)
             .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.Center
     ) {
         TargetType.entries.forEach { type ->
             val isActive = type == selected
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .width(120.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(
                         if (isActive) AuraColors.YellowPrimary
@@ -66,7 +67,7 @@ fun SegmentedTargetSelector(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
                         imageVector = if (type == TargetType.TIMER) Icons.Rounded.Timer
@@ -87,87 +88,6 @@ fun SegmentedTargetSelector(
     }
 }
 
-//@Composable
-//fun TimeTargetRow(
-//    hours: Int,
-//    minutes: Int,
-//    onHoursChange: (Int) -> Unit,
-//    onMinutesChange: (Int) -> Unit
-//) {
-//    Row(
-//        modifier = Modifier.fillMaxWidth(),
-//        horizontalArrangement = Arrangement.spacedBy(12.dp)
-//    ) {
-//        NumberPickerField(
-//            label = "Hours",
-//            value = hours,
-//            range = 0..23,
-//            onValueChange = onHoursChange,
-//            modifier = Modifier.weight(1f)
-//        )
-//        NumberPickerField(
-//            label = "Minutes",
-//            value = minutes,
-//            range = 0..59,
-//            step = 5,
-//            onValueChange = onMinutesChange,
-//            modifier = Modifier.weight(1f)
-//        )
-//    }
-//}
-//
-//@Composable
-//fun NumberPickerField(
-//    label: String,
-//    value: Int,
-//    range: IntRange,
-//    onValueChange: (Int) -> Unit,
-//    modifier: Modifier = Modifier,
-//    step: Int = 1
-//) {
-//    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-//        Text(label, style = AuraTypography.BodySmall, color = AuraColors.TextMuted)
-//        Spacer(Modifier.height(6.dp))
-//        Row(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .clip(RoundedCornerShape(12.dp))
-//                .background(AuraColors.BackgroundDark)
-//                .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(12.dp)),
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.SpaceBetween
-//        ) {
-//            Box(
-//                modifier = Modifier
-//                    .size(44.dp)
-//                    .clickable { onValueChange((value - step).coerceAtLeast(range.first)) },
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Text("−", style = AuraTypography.TitleMedium, color = AuraColors.YellowPrimary)
-//            }
-//            Text(
-//                text = "%02d".format(value),
-//                style = AuraTypography.TitleMedium,
-//                color = AuraColors.TextPrimary,
-//                fontWeight = FontWeight.Bold,
-//                textAlign = TextAlign.Center
-//            )
-//            Box(
-//                modifier = Modifier
-//                    .size(44.dp)
-//                    .clickable { onValueChange((value + step).coerceAtMost(range.last)) },
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Text("+", style = AuraTypography.TitleMedium, color = AuraColors.YellowPrimary)
-//            }
-//        }
-//    }
-//}
-
-
-
-
-
 @Composable
 fun TimeTargetRow(
     hours: Int,
@@ -176,23 +96,23 @@ fun TimeTargetRow(
     onMinutesChange: (Int) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
     ) {
         ScrollValuePickerField(
             label = "Hours",
             items = (0..23).map { "%02d".format(it) },
             selectedValue = "%02d".format(hours),
             onValueSelected = { onHoursChange(it.toInt()) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.width(80.dp)
         )
 
         ScrollValuePickerField(
             label = "Minutes",
-            items = (0..59 step 5).map { "%02d".format(it) },
+            items = (0..59).map { "%02d".format(it) },
             selectedValue = "%02d".format(minutes),
             onValueSelected = { onMinutesChange(it.toInt()) },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.width(80.dp)
         )
     }
 }
@@ -208,7 +128,7 @@ fun ScrollValuePickerField(
     onValueSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val itemHeight = 44.dp
+
     val repeatedItems = remember(items) {
         List(2000) { index -> items[index % items.size] }
     }
@@ -245,13 +165,13 @@ fun ScrollValuePickerField(
 
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(itemHeight)
+                .width(48.dp)
+                .height(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(AuraColors.BackgroundDark)
+                .background(AuraColors.YellowPrimary.copy(alpha = 0.10f))
                 .border(
                     1.dp,
-                    AuraColors.CardBorderDefault,
+                    AuraColors.YellowPrimary.copy(alpha = 0.25f),
                     RoundedCornerShape(12.dp)
                 )
         ) {
@@ -265,7 +185,7 @@ fun ScrollValuePickerField(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(itemHeight),
+                            .height(40.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

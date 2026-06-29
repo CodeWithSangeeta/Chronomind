@@ -22,6 +22,7 @@ import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import com.sangeeta.chronomind.ui.model.ActivityColorOption
 
 @Composable
@@ -179,18 +180,32 @@ private fun CreateEditActivityContent(
 
             item {
                 FormSectionCard(title = "Target") {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        SegmentedTargetSelector(
-                            selected = uiState.targetType,
-                            onSelected = onTargetTypeSelected
-                        )
-                        if (uiState.targetType == TargetType.TIMER) {
-                            TimeTargetRow(
-                                hours = uiState.targetHours,
-                                minutes = uiState.targetMinutes,
-                                onHoursChange = onHoursChange,
-                                onMinutesChange = onMinutesChange
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            SegmentedTargetSelector(
+                                selected = uiState.targetType,
+                                onSelected = onTargetTypeSelected
                             )
+                        }
+
+                        if (uiState.targetType == TargetType.TIMER) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                TimeTargetRow(
+                                    hours = uiState.targetHours,
+                                    minutes = uiState.targetMinutes,
+                                    onHoursChange = onHoursChange,
+                                    onMinutesChange = onMinutesChange
+                                )
+                            }
                         } else {
                             Text(
                                 text = "No target — timer counts up until you tap Finish.",
@@ -202,7 +217,6 @@ private fun CreateEditActivityContent(
                     }
                 }
             }
-
 
 
             item {
