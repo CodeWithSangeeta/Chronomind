@@ -23,4 +23,12 @@ class OnboardingRepository @Inject constructor(
     ) = dataStore.completeOnboarding(name, accountability, checkIn, streakMiss)
 
     suspend fun resetOnboarding() = dataStore.resetOnboarding()
+
+    suspend fun setCheckInStyle(value: String) {
+        dataStore.setCheckInStyle(value)
+    }
+
+    suspend fun setStreakOnMiss(value: String) {
+        dataStore.setStreakOnMiss(value)
+    }
 }

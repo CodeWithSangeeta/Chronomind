@@ -64,6 +64,11 @@ dependencies {
     implementation(libs.androidx.core.i18n)
     implementation(libs.transport.runtime)
     implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.foundation)
+    implementation(libs.androidx.animation)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.ui.graphics)
 
     testImplementation(libs.junit)
 
