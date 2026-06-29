@@ -31,10 +31,6 @@ class MainActivity : ComponentActivity() {
             viewModel.uiState.value.isLoading
         }
 
-        // In MainActivity, add to onCreate after setContent:
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
-        }
         enableEdgeToEdge()
         setContent {
 

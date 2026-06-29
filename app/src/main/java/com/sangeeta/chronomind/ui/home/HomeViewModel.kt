@@ -8,16 +8,24 @@ import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
 import com.sangeeta.chronomind.service.TimerForegroundService
 import com.sangeeta.chronomind.ui.mapper.toUiModel
+import com.sangeeta.chronomind.ui.model.ActivityDisplayState
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.sangeeta.chronomind.ui.model.ActivityDisplayState
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -25,34 +33,43 @@ class HomeViewModel @Inject constructor(
     private val onboardingRepo: OnboardingRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+    private val _events = Channel<HomeEvent>(Channel.BUFFERED)
+    val events = _events.receiveAsFlow()
 
+    sealed interface HomeEvent {
+        data class RequestNotificationPermission(val activityId: Int) : HomeEvent
+    }
     private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val _scrollToTimerSignal = MutableSharedFlow<Long>(extraBufferCapacity = 1)
+    val scrollToTimerSignal = _scrollToTimerSignal.asSharedFlow()
+
+    private val _activeTimerCardActivityId = MutableStateFlow<Int?>(null)
+    val activeTimerCardActivityId: StateFlow<Int?> = _activeTimerCardActivityId.asStateFlow()
+
     val heroDisplayState: StateFlow<ActivityDisplayState?> =
         combine(
-            activityRepo.observeRunning(),
+            activityRepo.observeAll(),
             activityRepo.selectedActivityId
-        ) { running, selectedId ->
-            running?.id ?: selectedId
-        }.flatMapLatest { activityId ->
-            if (activityId == null) {
-                flowOf(null)
-            } else {
-                activityRepo.observeById(activityId).map { entity ->
-                    entity?.let { activityRepo.buildDisplayState(it) }
-                }
-            }
+        ) { activities, selectedId ->
+            val now = System.currentTimeMillis()
+            val running  = activities.firstOrNull { it.isRunning }
+            val selected = activities.firstOrNull { it.id == selectedId }
+            val fallback = activities.firstOrNull()
+            val hero = running ?: selected ?: fallback
+            hero?.let { activityRepo.buildDisplayState(it, now) }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = null
         )
 
+    private val _showFinishDialog = MutableStateFlow(false)
+    val showFinishDialog: StateFlow<Boolean> = _showFinishDialog.asStateFlow()
+
     init {
-        viewModelScope.launch {
-            activityRepo.syncDayBoundaryIfNeeded()
-        }
+        viewModelScope.launch { activityRepo.syncDayBoundaryIfNeeded() }
         observeHomeData()
     }
 
@@ -65,20 +82,22 @@ class HomeViewModel @Inject constructor(
                 activityRepo.selectedActivityId
             ) { userName, activities, running, selectedId ->
                 HomeCombinedState(
-                    userName = userName,
-                    activities = activities.map { it.toUiModel() },
+                    userName     = userName,
+                    activities   = activities.map { it.toUiModel() },
                     runningActivity = running?.toUiModel(),
-                    selectedId = selectedId
+                    selectedId   = selectedId
                 )
             }.collect { combined ->
 
                 val recent = buildRecentActivities(combined.activities)
 
-                val selectedUi = combined.activities.firstOrNull { it.id == combined.selectedId }
+                val selectedUi  = combined.activities.firstOrNull { it.id == combined.selectedId }
                 val heroSelected = combined.runningActivity
                     ?: selectedUi
                     ?: recent.firstOrNull()
                     ?: combined.activities.firstOrNull()
+
+                _activeTimerCardActivityId.value = combined.runningActivity?.id ?: heroSelected?.id
 
                 if (combined.selectedId == null && heroSelected != null) {
                     activityRepo.selectActivity(heroSelected.id)
@@ -86,11 +105,11 @@ class HomeViewModel @Inject constructor(
 
                 _uiState.update {
                     it.copy(
-                        isLoading = false,
-                        appName = if (combined.userName.isBlank()) "ChronoMind" else "${combined.userName}'s ChronoMind",
-                        subtitle = if (combined.runningActivity != null) "Stay locked in" else "Focus • Track • Grow",
+                        isLoading        = false,
+                        appName          = if (combined.userName.isBlank()) "ChronoMind"
+                        else "${combined.userName}'s ChronoMind",
                         selectedActivity = heroSelected,
-                        runningActivity = combined.runningActivity,
+                        runningActivity  = combined.runningActivity,
                         recentActivities = recent
                     )
                 }
@@ -98,26 +117,45 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+
     fun onRecentActivitySelected(activityId: Int) {
         activityRepo.selectActivity(activityId)
     }
 
     fun startFocus() {
-        val activityId = heroDisplayState.value?.activityId ?: uiState.value.selectedActivity?.id ?: return
+        val activityId = heroDisplayState.value?.activityId
+            ?: uiState.value.selectedActivity?.id
+            ?: return
+
+        viewModelScope.launch {
+            _events.send(HomeEvent.RequestNotificationPermission(activityId))
+        }
+    }
+
+    fun continueStartFocusAfterPermission(activityId: Int) {
         viewModelScope.launch {
             val entity = activityRepo.observeById(activityId).firstOrNull() ?: return@launch
             if (!activityRepo.buildDisplayState(entity).canStart) return@launch
+
             activityRepo.resumeOrStart(entity)
             startTimerService()
+            _scrollToTimerSignal.tryEmit(System.currentTimeMillis())
+        }
+    }
+
+    fun startActivityDirectly(activityId: Int) {
+        viewModelScope.launch {
+            val entity = activityRepo.observeById(activityId).firstOrNull() ?: return@launch
+            if (!activityRepo.buildDisplayState(entity).canStart) return@launch
+            activityRepo.switchToActivity(entity)
+            startTimerService()
+            _scrollToTimerSignal.tryEmit(System.currentTimeMillis())
         }
     }
 
     fun pauseSession() {
         context.startService(TimerForegroundService.pauseIntent(context))
     }
-
-    private val _showFinishDialog = MutableStateFlow(false)
-    val showFinishDialog: StateFlow<Boolean> = _showFinishDialog.asStateFlow()
 
     fun requestFinish() {
         _showFinishDialog.value = true
@@ -138,15 +176,6 @@ class HomeViewModel @Inject constructor(
     }
 
 
-
-    fun startActivityDirectly(activityId: Int) {
-        viewModelScope.launch {
-            val entity = activityRepo.observeById(activityId).firstOrNull() ?: return@launch
-            activityRepo.switchToActivity(entity)
-            startTimerService()
-        }
-    }
-
     private fun startTimerService() {
         val intent = TimerForegroundService.startIntent(context)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -161,7 +190,8 @@ class HomeViewModel @Inject constructor(
             .filter { activity ->
                 val label = activity.lastActiveDate.trim().lowercase()
                 label == "today" || label == "yesterday" || activity.elapsedSeconds > 0 ||
-                        (label.contains("days ago") && (label.filter { it.isDigit() }.toIntOrNull() ?: 99) <= 7)
+                        (label.contains("days ago") &&
+                                (label.filter { it.isDigit() }.toIntOrNull() ?: 99) <= 7)
             }
             .sortedWith(
                 compareByDescending<ActivityUiModel> { lastUsedWeight(it.lastActiveDate) }
@@ -171,9 +201,9 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun lastUsedWeight(label: String): Int = when (label.trim().lowercase()) {
-        "today" -> 100
+        "today"     -> 100
         "yesterday" -> 90
-        else -> 0
+        else        -> 0
     }
 
     private data class HomeCombinedState(

@@ -65,4 +65,17 @@ class OnboardingDataStore @Inject constructor(
     suspend fun resetOnboarding() {
         store.edit { it.clear() }
     }
+
+
+    suspend fun setCheckInStyle(value: String) {
+        store.edit { prefs ->
+            prefs[keyCheckInStyle] = value
+        }
+    }
+
+    suspend fun setStreakOnMiss(value: String) {
+        store.edit { prefs ->
+            prefs[keyStreakOnMiss] = value
+        }
+    }
 }

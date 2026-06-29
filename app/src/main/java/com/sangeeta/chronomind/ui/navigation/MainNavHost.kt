@@ -52,6 +52,24 @@ fun MainNavHost(
         }
 
 
+//        composable(
+//            route = ChronoRoutes.CreateEditActivity.route,
+//            arguments = listOf(
+//                navArgument(ChronoRoutes.CreateEditActivity.ARG) {
+//                    type = NavType.IntType
+//                    defaultValue = -1
+//                }
+//            )
+//        ) {
+//            CreateEditActivityScreen(
+//                onBackClick = { navController.popBackStack() },
+//                onSaved     = { navController.popBackStack() },
+//                onDeleted   = { navController.popBackStack() }
+//            )
+//        }
+
+
+
         composable(
             route = ChronoRoutes.CreateEditActivity.route,
             arguments = listOf(
@@ -63,8 +81,13 @@ fun MainNavHost(
         ) {
             CreateEditActivityScreen(
                 onBackClick = { navController.popBackStack() },
-                onSaved     = { navController.popBackStack() },
-                onDeleted   = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateHomeAfterStart = {
+                    navController.navigate(ChronoRoutes.Home.route) {
+                        popUpTo(ChronoRoutes.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 

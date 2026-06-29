@@ -65,10 +65,10 @@ enum class CheckInStyle(
         "I’ll mark my day complete",
         "Manual check-in"
     ),
-    REMINDER(
+    AUTO_CHECK(
         Icons.Rounded.Notifications,
-        "Remind me to check in",
-        "Gentle reminders"
+        "Auto check-in",
+        "Automatically mark timer sessions complete when timer complete"
     )
 }
 
