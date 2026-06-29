@@ -1,5 +1,13 @@
 package com.sangeeta.chronomind.ui.home
 
+import android.R.attr.scaleX
+import android.R.attr.scaleY
+import androidx.compose.animation.Animatable
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -7,7 +15,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,16 +28,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,10 +50,48 @@ import com.sangeeta.chronomind.ui.components.ActivityCard
 import com.sangeeta.chronomind.ui.components.ChronoTimerRing
 import com.sangeeta.chronomind.ui.model.ActivityDisplayState
 import com.sangeeta.chronomind.ui.model.ActivitySessionState
-import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 
+//@Composable
+//fun HomeScreen(
+//    viewModel: HomeViewModel = hiltViewModel(),
+//    onNavigateToSettings: () -> Unit,
+//    onNavigateToAllActivities: () -> Unit,
+//    onNavigateToCreateActivity: () -> Unit,
+//    onNavigateToHistory: () -> Unit,
+//    onNavigateToInsights: () -> Unit,
+//    onNavigateToWidgetSetup: () -> Unit,
+//    onNavigateToWidgetPreview: () -> Unit
+//) {
+//    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+//    val heroDisplayState by viewModel.heroDisplayState.collectAsStateWithLifecycle()
+//    val showFinishDialog by viewModel.showFinishDialog.collectAsStateWithLifecycle()
+//
+//    HomeScreenContent(
+//        uiState = uiState,
+//        heroDisplayState = heroDisplayState,
+//        showFinishDialog = showFinishDialog,
+//        onNavigateToSettings = onNavigateToSettings,
+//        onNavigateToAllActivities = onNavigateToAllActivities,
+//        onQuickActionClick = { action ->
+//            when (action.id) {
+//                "new_activity" -> onNavigateToCreateActivity()
+//                "history" -> onNavigateToHistory()
+//                "insights" -> onNavigateToInsights()
+//                "widget_setup" -> onNavigateToWidgetSetup()
+//                "widget_preview" -> onNavigateToWidgetPreview()
+//            }
+//        },
+//        onStartFocus = viewModel::startFocus,
+//        onPause = viewModel::pauseSession,
+//        onFinish = viewModel::requestFinish,
+//        onConfirmFinish = viewModel::confirmFinish,
+//        onCancelFinish = viewModel::cancelFinish,
+//        onRecentActivityClick = viewModel::onRecentActivitySelected,
+//        onStartActivityDirectly = viewModel::startActivityDirectly
+//    )
+//}
 
 @Composable
 fun HomeScreen(
@@ -56,6 +108,23 @@ fun HomeScreen(
     val heroDisplayState by viewModel.heroDisplayState.collectAsStateWithLifecycle()
     val showFinishDialog by viewModel.showFinishDialog.collectAsStateWithLifecycle()
 
+    val listState = rememberLazyListState()
+    var timerPulseTrigger by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        viewModel.scrollToTimerSignal.collect {
+            listState.animateScrollToItem(0)
+            timerPulseTrigger++
+        }
+    }
+
+    LaunchedEffect(heroDisplayState?.activityId, heroDisplayState?.isRunning) {
+        if (heroDisplayState?.isRunning == true) {
+            listState.animateScrollToItem(0)
+            timerPulseTrigger++
+        }
+    }
+
     HomeScreenContent(
         uiState = uiState,
         heroDisplayState = heroDisplayState,
@@ -64,11 +133,11 @@ fun HomeScreen(
         onNavigateToAllActivities = onNavigateToAllActivities,
         onQuickActionClick = { action ->
             when (action.id) {
-                "new_activity" -> onNavigateToCreateActivity()
+                "newactivity" -> onNavigateToCreateActivity()
                 "history" -> onNavigateToHistory()
                 "insights" -> onNavigateToInsights()
-                "widget_setup" -> onNavigateToWidgetSetup()
-                "widget_preview" -> onNavigateToWidgetPreview()
+                "widgetsetup" -> onNavigateToWidgetSetup()
+                "widgetpreview" -> onNavigateToWidgetPreview()
             }
         },
         onStartFocus = viewModel::startFocus,
@@ -77,9 +146,28 @@ fun HomeScreen(
         onConfirmFinish = viewModel::confirmFinish,
         onCancelFinish = viewModel::cancelFinish,
         onRecentActivityClick = viewModel::onRecentActivitySelected,
-        onStartActivityDirectly = viewModel::startActivityDirectly
+        onStartActivityDirectly = viewModel::startActivityDirectly,
+        listState = listState,
+        timerPulseTrigger = timerPulseTrigger
     )
 }
+
+//@Composable
+//private fun HomeScreenContent(
+//    uiState: HomeUiState,
+//    heroDisplayState: ActivityDisplayState?,
+//    showFinishDialog: Boolean,
+//    onNavigateToSettings: () -> Unit,
+//    onNavigateToAllActivities: () -> Unit,
+//    onQuickActionClick: (HomeQuickAction) -> Unit,
+//    onStartFocus: () -> Unit,
+//    onPause: () -> Unit,
+//    onFinish: () -> Unit,
+//    onConfirmFinish: () -> Unit,
+//    onCancelFinish: () -> Unit,
+//    onRecentActivityClick: (Int) -> Unit,
+//    onStartActivityDirectly: (Int) -> Unit,
+//){
 
 @Composable
 private fun HomeScreenContent(
@@ -96,6 +184,8 @@ private fun HomeScreenContent(
     onCancelFinish: () -> Unit,
     onRecentActivityClick: (Int) -> Unit,
     onStartActivityDirectly: (Int) -> Unit,
+    listState: LazyListState,
+    timerPulseTrigger: Int
 ){
     Column(
         modifier = Modifier
@@ -109,23 +199,49 @@ private fun HomeScreenContent(
             onSettingsClick = onNavigateToSettings,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         )
+//
+//        LazyColumn(
+//            modifier = Modifier.fillMaxSize(),
+//            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
+//            verticalArrangement = Arrangement.spacedBy(20.dp)
+//        ) {
 
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            item {
-                TimerHeroCard(heroState = heroDisplayState)
-            }
+//            item(key = "focus_timer_card") {
+//                HomeFocusTimerCard(
+//                    heroState = heroDisplayState,
+//                    onPause = onPause,
+//                    onFinish = onFinish,
+//                    onSwitch = { onNavigateToAllActivities() },
+//                    modifier = Modifier.fillMaxWidth()
+//                )
+//            }
 
-            item {
-                SessionControls(
-                    heroState = heroDisplayState,
-                    onStartFocus = onStartFocus,
-                    onPause = onPause,
-                    onFinish = onFinish
-                )
+            item(key = "focus_timer_card") {
+                AnimatedHomeTimerCard(pulseTrigger = timerPulseTrigger) { animatedModifier ->
+//                    HomeFocusTimerCard(
+//                        heroState = heroDisplayState,
+//                        onPause = onPause,
+//                        onFinish = onFinish,
+//                        onSwitch = onNavigateToAllActivities,
+//                        modifier = animatedModifier.fillMaxWidth()
+//                    )
+
+//                    item {
+                        FocusTimerCard(
+                            heroState = heroDisplayState,
+                            onStartFocus = onStartFocus,
+                            onPause = onPause,
+                            onFinish = onFinish,
+                            onSwitch = onNavigateToAllActivities
+                        )
+                    }
+             //   }
             }
 
             item {
@@ -152,10 +268,11 @@ private fun HomeScreenContent(
                         isSelected = activity.id == uiState.selectedActivity?.id,
                         onCardClick = { onRecentActivityClick(activity.id) },
                         onActionClick = {
-                            if (activity.isRunning) {
-                                onPause()
-                            } else {
-                                onStartActivityDirectly(activity.id)
+                            when (activity.sessionState) {
+                                ActivitySessionState.RUNNING -> onPause()
+                                ActivitySessionState.PENDING,
+                                ActivitySessionState.IDLE -> onStartActivityDirectly(activity.id)
+                                ActivitySessionState.COMPLETED_TODAY -> Unit
                             }
                         }
                     )
@@ -188,114 +305,6 @@ private fun HomeScreenContent(
     }
 }
 
-
-//@Composable
-//fun ActivityCard(
-//    activity: ActivityUiModel,
-//    isSelected: Boolean,
-//    onCardClick: () -> Unit,
-//    onActionClick: () -> Unit
-//) {
-//    val borderColor = when {
-//        activity.isRunning -> AuraColors.YellowPrimary
-//        isSelected         -> AuraColors.YellowPrimary.copy(alpha = 0.55f)
-//        else               -> AuraColors.CardBorderDefault
-//    }
-//
-//    Box(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .clip(RoundedCornerShape(24.dp))
-//            .background(
-//                Brush.verticalGradient(
-//                    colors = listOf(Color(0xFF141414), AuraColors.SurfaceCard)
-//                )
-//            )
-//            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(24.dp))
-//            .clickable(onClick = onCardClick)
-//            .padding(horizontal = 16.dp, vertical = 16.dp)
-//    ) {
-//        Row(
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.spacedBy(14.dp)
-//        ) {
-//            Box(
-//                modifier = Modifier
-//                    .size(52.dp)
-//                    .clip(CircleShape)
-//                    .background(AuraColors.SurfaceCardLight),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Icon(
-//                    imageVector = activity.icon,
-//                    contentDescription = null,
-//                    tint = AuraColors.YellowPrimary,
-//                    modifier = Modifier.size(32.dp)
-//                )
-//            }
-//
-//            Column(
-//                modifier = Modifier.weight(1f),
-//                verticalArrangement = Arrangement.spacedBy(6.dp)
-//            ) {
-//                Text(
-//                    text = activity.name,
-//                    style = AuraTypography.TitleMedium,
-//                    color = AuraColors.TextPrimary,
-//                    maxLines = 1,
-//                    overflow = TextOverflow.Ellipsis
-//                )
-//                Text(
-//                    text = "${activity.targetSeconds / 60} min • ${activity.lastActiveDate}",
-//                    style = AuraTypography.BodyMedium,
-//                    color = AuraColors.TextSecondary
-//                )
-//                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-//                    Text(
-//                        text = "${(activity.progress * 100).toInt()}%",
-//                        style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
-//                        color = AuraColors.YellowPrimary
-//                    )
-//                    Box(
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .height(5.dp)
-//                            .clip(RoundedCornerShape(50.dp))
-//                            .background(AuraColors.TimerTrack)
-//                    ) {
-//                        Box(
-//                            modifier = Modifier
-//                                .fillMaxWidth(activity.progress.coerceIn(0f, 1f))
-//                                .height(5.dp)
-//                                .clip(RoundedCornerShape(50.dp))
-//                                .background(AuraColors.YellowPrimary)
-//                        )
-//                    }
-//                }
-//            }
-//
-//            val actionIcon = if (activity.isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow
-//            val actionDesc = if (activity.isRunning) "Pause ${activity.name}" else "Select ${activity.name}"
-//            Box(
-//                modifier = Modifier
-//                    .size(42.dp)
-//                    .clip(CircleShape)
-//                    .background(AuraColors.SurfaceCardLight)
-//                    .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
-//                    .clickable(onClick = onActionClick),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Icon(
-//                    imageVector = actionIcon,
-//                    contentDescription = actionDesc,
-//                    tint = AuraColors.YellowPrimary
-//                )
-//            }
-//        }
-//    }
-//}
-
-
 @Composable
 private fun HomeHeader(
     appName: String,
@@ -314,9 +323,21 @@ private fun HomeHeader(
             Box(
                 modifier = Modifier
                     .size(48.dp)
-                    .shadow(12.dp, CircleShape, ambientColor = AuraColors.YellowGlow, spotColor = AuraColors.YellowGlow)
+                    .shadow(
+                        12.dp,
+                        CircleShape,
+                        ambientColor = AuraColors.YellowGlow,
+                        spotColor = AuraColors.YellowGlow
+                    )
                     .clip(CircleShape)
-                    .background(Brush.radialGradient(listOf(AuraColors.YellowPrimary.copy(alpha = 0.18f), AuraColors.SurfaceCard)))
+                    .background(
+                        Brush.radialGradient(
+                            listOf(
+                                AuraColors.YellowPrimary.copy(alpha = 0.18f),
+                                AuraColors.SurfaceCard
+                            )
+                        )
+                    )
                     .border(1.dp, AuraColors.CardBorderSelected.copy(alpha = 0.7f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -328,7 +349,12 @@ private fun HomeHeader(
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .shadow(10.dp, CircleShape, ambientColor = AuraColors.YellowGlow, spotColor = AuraColors.YellowGlow)
+                .shadow(
+                    10.dp,
+                    CircleShape,
+                    ambientColor = AuraColors.YellowGlow,
+                    spotColor = AuraColors.YellowGlow
+                )
                 .clip(CircleShape)
                 .background(AuraColors.SurfaceCard)
                 .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
@@ -342,9 +368,7 @@ private fun HomeHeader(
 
 
 @Composable
-private fun TimerHeroCard(
-    heroState: ActivityDisplayState?
-) {
+private fun TimerHeroCard(heroState: ActivityDisplayState?) {
     val activityName = heroState?.name?.uppercase() ?: "NO ACTIVITY SELECTED"
     val timerText = heroState?.displayTime ?: "00:00"
     val progress = heroState?.progress ?: 0f
@@ -360,7 +384,11 @@ private fun TimerHeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(32.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF101010), AuraColors.BackgroundDark)))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF101010), AuraColors.BackgroundDark)
+                )
+            )
             .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(32.dp))
             .padding(horizontal = 20.dp, vertical = 28.dp),
         contentAlignment = Alignment.Center
@@ -436,7 +464,7 @@ private fun SessionControls(
 
         else -> {
             PremiumPrimaryButton(
-                text = "Start Focus",
+                text = if (heroState.sessionState == ActivitySessionState.PENDING) "Resume Focus" else "Start Focus",
                 icon = Icons.Rounded.PlayArrow,
                 onClick = onStartFocus
             )
@@ -445,50 +473,7 @@ private fun SessionControls(
 }
 
 
-@Composable
-private fun QuickActionsSection(
-    actions: List<HomeQuickAction>,
-    onActionClick: (HomeQuickAction) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Quick Actions", style = AuraTypography.LabelMedium, color = AuraColors.TextMuted)
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            actions.forEach { action ->
-                QuickActionCard(action = action, onClick = { onActionClick(action) })
-            }
-        }
-    }
-}
 
-@Composable
-private fun QuickActionCard(action: HomeQuickAction, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(108.dp)
-            .clip(RoundedCornerShape(22.dp))
-            .background(Brush.verticalGradient(listOf(AuraColors.SurfaceCardLight, AuraColors.SurfaceCard)))
-            .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(22.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 18.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .clip(CircleShape)
-                .background(AuraColors.YellowPrimary.copy(alpha = 0.10f))
-                .border(1.dp, AuraColors.YellowPrimary.copy(alpha = 0.22f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(action.icon, contentDescription = action.title, tint = AuraColors.YellowPrimary)
-        }
-        Text(action.title, style = AuraTypography.BodyMedium, color = AuraColors.TextPrimary)
-    }
-}
 
 
 @Composable
@@ -510,70 +495,33 @@ private fun SectionHeader(title: String, actionText: String, onActionClick: () -
 
 
 @Composable
-private fun EmptyRecentActivities() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(AuraColors.SurfaceCard)
-            .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(22.dp))
-            .padding(20.dp)
-    ) {
-        Text(
-            "No recent activities. Activities used today or yesterday will appear here.",
-            style = AuraTypography.BodyMedium,
-            color = AuraColors.TextSecondary
-        )
-    }
-}
-
-
-@Composable
-private fun PremiumPrimaryButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
+private fun AnimatedHomeTimerCard(
+    pulseTrigger: Int,
+    content: @Composable (Modifier) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(Brush.horizontalGradient(listOf(AuraColors.SurfaceCard, Color(0xFF1C1707))))
-            .border(1.dp, AuraColors.YellowPrimary.copy(alpha = 0.35f), RoundedCornerShape(28.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icon, contentDescription = text, tint = AuraColors.YellowPrimary)
-        Spacer(Modifier.width(10.dp))
-        Text(text, style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.Bold), color = AuraColors.YellowPrimary)
-    }
-}
+    val scale = remember { Animatable(1f) }
 
-@Composable
-private fun PremiumPillButton(
-    text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier,
-    isPrimary: Boolean = false,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                if (isPrimary) Brush.horizontalGradient(listOf(AuraColors.YellowPrimary.copy(alpha = 0.18f), AuraColors.SurfaceCard))
-                else Brush.horizontalGradient(listOf(AuraColors.SurfaceCardLight, AuraColors.SurfaceCard))
+    LaunchedEffect(pulseTrigger) {
+        if (pulseTrigger > 0) {
+            scale.snapTo(0.96f)
+            scale.animateTo(
+                targetValue = 1.03f,
+                animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
             )
-            .border(1.dp, if (isPrimary) AuraColors.YellowPrimary.copy(alpha = 0.35f) else AuraColors.CardBorderDefault, RoundedCornerShape(22.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icon, contentDescription = text, tint = if (isPrimary) AuraColors.YellowPrimary else AuraColors.TextPrimary, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(text, style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.SemiBold), color = if (isPrimary) AuraColors.YellowPrimary else AuraColors.TextPrimary)
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+        }
     }
+
+    content(
+        Modifier.graphicsLayer {
+            scaleX = scale.value
+            scaleY = scale.value
+        }
+    )
 }

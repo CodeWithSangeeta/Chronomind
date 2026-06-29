@@ -3,10 +3,18 @@ package com.sangeeta.chronomind.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
@@ -20,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
@@ -31,11 +40,45 @@ fun ActivityCard(
     onCardClick: () -> Unit,
     onActionClick: () -> Unit
 ) {
-    val borderColor = when {
-        activity.isRunning -> AuraColors.YellowPrimary
-        isSelected         -> AuraColors.YellowPrimary.copy(alpha = 0.55f)
-        else               -> AuraColors.CardBorderDefault
+    val borderColor = when (activity.sessionState) {
+        ActivitySessionState.RUNNING -> AuraColors.YellowPrimary
+        ActivitySessionState.PENDING -> AuraColors.YellowPrimary.copy(alpha = 0.55f)
+        ActivitySessionState.COMPLETED_TODAY -> Color(0xFF4CAF50).copy(alpha = 0.6f)
+        ActivitySessionState.IDLE -> if (isSelected) {
+            AuraColors.YellowPrimary.copy(alpha = 0.45f)
+        } else {
+            AuraColors.CardBorderDefault
+        }
     }
+
+    val statusText = when (activity.sessionState) {
+        ActivitySessionState.RUNNING -> "In session • ${activity.displayTime}"
+        ActivitySessionState.PENDING -> "Resume • ${activity.displayTime}"
+        ActivitySessionState.COMPLETED_TODAY -> "Completed today • ${activity.displayTime}"
+        ActivitySessionState.IDLE -> "${activity.targetSeconds / 60} min • ${activity.lastActiveDate}"
+    }
+
+    val actionIcon = when (activity.sessionState) {
+        ActivitySessionState.RUNNING -> Icons.Rounded.Pause
+        ActivitySessionState.PENDING -> Icons.Rounded.PlayArrow
+        ActivitySessionState.COMPLETED_TODAY -> Icons.Rounded.CheckCircle
+        ActivitySessionState.IDLE -> Icons.Rounded.PlayArrow
+    }
+
+    val actionTint = when (activity.sessionState) {
+        ActivitySessionState.COMPLETED_TODAY -> Color(0xFF66BB6A)
+        ActivitySessionState.PENDING -> Color(0xFFFFB74D)
+        else -> AuraColors.YellowPrimary
+    }
+
+    val actionDescription = when (activity.sessionState) {
+        ActivitySessionState.RUNNING -> "Pause ${activity.name}"
+        ActivitySessionState.PENDING -> "Resume ${activity.name}"
+        ActivitySessionState.COMPLETED_TODAY -> "${activity.name} completed today"
+        ActivitySessionState.IDLE -> "Start ${activity.name}"
+    }
+
+    val actionEnabled = activity.sessionState != ActivitySessionState.COMPLETED_TODAY
 
     Box(
         modifier = Modifier
@@ -46,15 +89,20 @@ fun ActivityCard(
                     colors = listOf(Color(0xFF141414), AuraColors.SurfaceCard)
                 )
             )
-            .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(24.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(24.dp))
             .clickable(onClick = onCardClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
         Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.Transparent)
+                .widthIn(min = 0.dp)
+                .then(Modifier)
+                .paddingSafe(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Icon badge
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -62,16 +110,14 @@ fun ActivityCard(
                     .background(AuraColors.SurfaceCardLight),
                 contentAlignment = Alignment.Center
             ) {
-                // Fixed: use Icon with ImageVector instead of Text with Emoji
                 Icon(
                     imageVector = activity.icon,
                     contentDescription = null,
-                    tint = AuraColors.YellowPrimary,
+                    tint = actionTint,
                     modifier = Modifier.size(24.dp)
                 )
             }
 
-            // Name + meta + progress bar
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -83,17 +129,22 @@ fun ActivityCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+
                 Text(
-                    text = "${activity.targetSeconds / 60} min • ${activity.lastActiveDate}",
+                    text = statusText,
                     style = AuraTypography.BodyMedium,
-                    color = AuraColors.TextSecondary
+                    color = AuraColors.TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = "${(activity.progress * 100).toInt()}%",
                         style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = AuraColors.YellowPrimary
+                        color = actionTint
                     )
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -106,30 +157,45 @@ fun ActivityCard(
                                 .fillMaxWidth(activity.progress.coerceIn(0f, 1f))
                                 .height(5.dp)
                                 .clip(RoundedCornerShape(50.dp))
-                                .background(AuraColors.YellowPrimary)
+                                .background(actionTint)
                         )
                     }
                 }
+
+                if (activity.streakDays > 0) {
+                    Text(
+                        text = "Streak ${activity.streakDays} days",
+                        style = AuraTypography.BodySmall,
+                        color = AuraColors.TextMuted
+                    )
+                }
             }
 
-            // Play / Pause toggle button
-            val actionIcon = if (activity.isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow
-            val actionDesc = if (activity.isRunning) "Pause ${activity.name}" else "Select ${activity.name}"
             Box(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(AuraColors.SurfaceCardLight)
+                    .background(
+                        if (actionEnabled) AuraColors.SurfaceCardLight
+                        else AuraColors.SurfaceCardLight.copy(alpha = 0.6f)
+                    )
                     .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
-                    .clickable(onClick = onActionClick),
+                    .clickable(enabled = actionEnabled, onClick = onActionClick),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = actionIcon,
-                    contentDescription = actionDesc,
-                    tint = AuraColors.YellowPrimary
+                    contentDescription = actionDescription,
+                    tint = if (actionEnabled) actionTint else actionTint.copy(alpha = 0.7f)
                 )
             }
         }
     }
 }
+
+private fun Modifier.paddingSafe(): Modifier =
+    this.then(
+        Modifier
+            .fillMaxWidth()
+            .background(Color.Transparent)
+    )

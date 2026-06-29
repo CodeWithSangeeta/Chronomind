@@ -127,7 +127,11 @@ private fun AllActivitiesScreenContent(
                         activity = activity,
                         isSelected = false,
                         onCardClick = { onEditActivityClick(activity.id) },
-                        onActionClick = { onStartActivityClick(activity.id) }
+                        onActionClick = {
+                            if (activity.canStart) {
+                                onStartActivityClick(activity.id)
+                            }
+                        }
                     )
                 }
             }

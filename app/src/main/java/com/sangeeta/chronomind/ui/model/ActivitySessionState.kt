@@ -2,13 +2,7 @@ package com.sangeeta.chronomind.ui.model
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class ActivitySessionState {
-    IDLE,
-    RUNNING,
-    PENDING,
-    COMPLETED_TODAY
-
-}
+enum class ActivitySessionState { IDLE, RUNNING, PENDING, COMPLETED_TODAY }
 
 data class ActivityDisplayState(
     val activityId: Int,
@@ -17,8 +11,8 @@ data class ActivityDisplayState(
     val colorHex: String,
     val sessionState: ActivitySessionState,
     val isStopwatch: Boolean,
-    val displayTime: String,       // shown in hero + notification + cards
-    val progress: Float,           // 0f→1f for timer, 0f for stopwatch
+    val displayTime: String,
+    val progress: Float,
     val streakDays: Int,
     val targetSeconds: Long,
     val elapsedSeconds: Long,

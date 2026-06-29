@@ -40,31 +40,36 @@ enum class ActivityIconOption(val icon: ImageVector) {
     }
 }
 
-enum class ActivityColorOption(val hex: String, val color: Color) {
-    AMBER("FFC328", Color(0xFFFFC328)),
-    ORANGE("FF6B35", Color(0xFFFF6B35)),
-    RED("FF4444", Color(0xFFFF4444)),
-    PINK("FF69B4", Color(0xFFFF69B4)),
-    PURPLE("8E55EA", Color(0xFF8E55EA)),
-    BLUE("2196F3", Color(0xFF2196F3)),
-    CYAN("00BCD4", Color(0xFF00BCD4)),
-    GREEN("4CAF50", Color(0xFF4CAF50)),
-    TEAL("009688", Color(0xFF009688)),
-    LIME("8BC34A", Color(0xFF8BC34A)),
-    INDIGO("3F51B5", Color(0xFF3F51B5)),
-    DEEP_PURPLE("673AB7", Color(0xFF673AB7)),
-    LIGHT_BLUE("03A9F4", Color(0xFF03A9F4)),
-    MINT("2ECC71", Color(0xFF2ECC71)),
-    CORAL("FF7F50", Color(0xFFFF7F50)),
-    ROSE("E91E63", Color(0xFFE91E63)),
-    GOLD("FFD700", Color(0xFFFFD700)),
-    BROWN("795548", Color(0xFF795548)),
-    SLATE("607D8B", Color(0xFF607D8B)),
-    MAGENTA("C2185B", Color(0xFFC2185B));
 
-    companion object {
-        fun fromHex(hex: String): ActivityColorOption {
-            return entries.find { it.hex == hex } ?: AMBER
+
+    enum class ActivityColorOption(val hex: String, val color: Color) {
+        AMBER("FFC328", Color(0xFFFFC328)),
+        ORANGE("FF6B35", Color(0xFFFF6B35)),
+        RED("FF4444", Color(0xFFFF4444)),
+        GREEN("22C55E", Color(0xFF22C55E)),
+        BLUE("3B82F6", Color(0xFF3B82F6)),
+        PURPLE("A855F7", Color(0xFFA855F7)),
+        PINK("FF69B4", Color(0xFFFF69B4)),
+        CYAN("00BCD4", Color(0xFF00BCD4)),
+        LIME("8BC34A", Color(0xFF8BC34A)),
+        TEAL("009688", Color(0xFF009688)),
+        INDIGO("3F51B5", Color(0xFF3F51B5)),
+        DEEP_PURPLE("673AB7", Color(0xFF673AB7)),
+        LIGHT_BLUE("03A9F4", Color(0xFF03A9F4)),
+        MINT("2ECC71", Color(0xFF2ECC71)),
+        CORAL("FF7F50", Color(0xFFFF7F50)),
+        ROSE("E91E63", Color(0xFFE91E63)),
+        GOLD("FFD700", Color(0xFFFFD700)),
+        BROWN("795548", Color(0xFF795548)),
+        SLATE("607D8B", Color(0xFF607D8B)),
+        MAGENTA("C2185B", Color(0xFFC2185B));
+
+        companion object {
+            fun fromHex(hex: String): ActivityColorOption {
+                val normalized = hex.removePrefix("#").uppercase()
+                return entries.find { it.hex.uppercase() == normalized } ?: AMBER
+            }
         }
+
     }
-}
+

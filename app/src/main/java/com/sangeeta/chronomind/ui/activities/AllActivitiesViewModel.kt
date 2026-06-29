@@ -86,17 +86,14 @@ class AllActivitiesViewModel @Inject constructor(
     fun onPlayClick(activityId: Int) {
         viewModelScope.launch {
             val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
-            if (entity.completedDate == activityRepository.getTodayDateString()) return@launch
+            val uiModel = entity.toUiModel()
+
+            if (!uiModel.canStart) return@launch
+
             activityRepository.switchToActivity(entity)
             startTimerService()
             _events.send(AllActivitiesEvent.NavigateToHome)
         }
-    }
-
-    private fun lastUsedWeight(label: String): Int = when (label.trim().lowercase()) {
-        "today" -> 100
-        "yesterday" -> 90
-        else -> 0
     }
 
     private fun startTimerService() {
@@ -105,6 +102,20 @@ class AllActivitiesViewModel @Inject constructor(
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
+        }
+    }
+
+    private fun lastUsedWeight(label: String): Int {
+        val normalized = label.trim().lowercase()
+        return when {
+            normalized == "today" -> 100
+            normalized == "yesterday" -> 99
+            normalized.contains("days ago") -> {
+                val days = normalized.filter { it.isDigit() }.toIntOrNull() ?: 999
+                (100 - days).coerceAtLeast(0)
+            }
+            normalized == "never" -> -1
+            else -> 0
         }
     }
 }
