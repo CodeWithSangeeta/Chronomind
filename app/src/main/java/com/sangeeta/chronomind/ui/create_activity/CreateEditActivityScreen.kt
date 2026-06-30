@@ -218,19 +218,6 @@ private fun CreateEditActivityContent(
                 }
             }
 
-
-            item {
-                ReminderSection(
-                    isEnabled = uiState.reminderEnabled,
-                    selectedHour = reminderHour,
-                    selectedMinute = reminderMinute,
-                    selectedAmPm = reminderAmPm,
-                    onReminderToggle = onReminderToggle,
-                    onHourChange = { /* handle later */ },
-                    onMinuteChange = { /* handle later */ },
-                    onAmPmChange = { /* handle later */ }
-                )
-            }
             item {
                 AdvancedSettingsSection(
                     isExpanded = uiState.isAdvancedExpanded,

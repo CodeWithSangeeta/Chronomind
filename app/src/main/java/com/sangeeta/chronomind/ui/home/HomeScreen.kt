@@ -1,8 +1,12 @@
 package com.sangeeta.chronomind.ui.home
 
-import android.R.attr.scaleX
-import android.R.attr.scaleY
-import androidx.compose.animation.Animatable
+
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -12,13 +16,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,9 +42,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sangeeta.chronomind.R
@@ -52,46 +56,6 @@ import com.sangeeta.chronomind.ui.model.ActivityDisplayState
 import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
-
-//@Composable
-//fun HomeScreen(
-//    viewModel: HomeViewModel = hiltViewModel(),
-//    onNavigateToSettings: () -> Unit,
-//    onNavigateToAllActivities: () -> Unit,
-//    onNavigateToCreateActivity: () -> Unit,
-//    onNavigateToHistory: () -> Unit,
-//    onNavigateToInsights: () -> Unit,
-//    onNavigateToWidgetSetup: () -> Unit,
-//    onNavigateToWidgetPreview: () -> Unit
-//) {
-//    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-//    val heroDisplayState by viewModel.heroDisplayState.collectAsStateWithLifecycle()
-//    val showFinishDialog by viewModel.showFinishDialog.collectAsStateWithLifecycle()
-//
-//    HomeScreenContent(
-//        uiState = uiState,
-//        heroDisplayState = heroDisplayState,
-//        showFinishDialog = showFinishDialog,
-//        onNavigateToSettings = onNavigateToSettings,
-//        onNavigateToAllActivities = onNavigateToAllActivities,
-//        onQuickActionClick = { action ->
-//            when (action.id) {
-//                "new_activity" -> onNavigateToCreateActivity()
-//                "history" -> onNavigateToHistory()
-//                "insights" -> onNavigateToInsights()
-//                "widget_setup" -> onNavigateToWidgetSetup()
-//                "widget_preview" -> onNavigateToWidgetPreview()
-//            }
-//        },
-//        onStartFocus = viewModel::startFocus,
-//        onPause = viewModel::pauseSession,
-//        onFinish = viewModel::requestFinish,
-//        onConfirmFinish = viewModel::confirmFinish,
-//        onCancelFinish = viewModel::cancelFinish,
-//        onRecentActivityClick = viewModel::onRecentActivitySelected,
-//        onStartActivityDirectly = viewModel::startActivityDirectly
-//    )
-//}
 
 @Composable
 fun HomeScreen(
@@ -110,6 +74,45 @@ fun HomeScreen(
 
     val listState = rememberLazyListState()
     var timerPulseTrigger by remember { mutableIntStateOf(0) }
+
+    val context = LocalContext.current
+    val activity = context as? Activity
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val activityId = viewModel.lastPermissionRequestedActivityId
+            ?: return@rememberLauncherForActivityResult
+
+        if (granted) {
+            viewModel.continueStartFocusAfterPermission(activityId)
+        } else {
+            viewModel.onNotificationPermissionDenied()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is HomeViewModel.HomeEvent.RequestNotificationPermission -> {
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                        viewModel.continueStartFocusAfterPermission(event.activityId)
+                    } else {
+                        val granted = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+
+                        if (granted) {
+                            viewModel.continueStartFocusAfterPermission(event.activityId)
+                        } else {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.scrollToTimerSignal.collect {
@@ -152,23 +155,6 @@ fun HomeScreen(
     )
 }
 
-//@Composable
-//private fun HomeScreenContent(
-//    uiState: HomeUiState,
-//    heroDisplayState: ActivityDisplayState?,
-//    showFinishDialog: Boolean,
-//    onNavigateToSettings: () -> Unit,
-//    onNavigateToAllActivities: () -> Unit,
-//    onQuickActionClick: (HomeQuickAction) -> Unit,
-//    onStartFocus: () -> Unit,
-//    onPause: () -> Unit,
-//    onFinish: () -> Unit,
-//    onConfirmFinish: () -> Unit,
-//    onCancelFinish: () -> Unit,
-//    onRecentActivityClick: (Int) -> Unit,
-//    onStartActivityDirectly: (Int) -> Unit,
-//){
-
 @Composable
 private fun HomeScreenContent(
     uiState: HomeUiState,
@@ -199,12 +185,6 @@ private fun HomeScreenContent(
             onSettingsClick = onNavigateToSettings,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         )
-//
-//        LazyColumn(
-//            modifier = Modifier.fillMaxSize(),
-//            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
-//            verticalArrangement = Arrangement.spacedBy(20.dp)
-//        ) {
 
         LazyColumn(
             state = listState,
@@ -212,27 +192,10 @@ private fun HomeScreenContent(
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-//            item(key = "focus_timer_card") {
-//                HomeFocusTimerCard(
-//                    heroState = heroDisplayState,
-//                    onPause = onPause,
-//                    onFinish = onFinish,
-//                    onSwitch = { onNavigateToAllActivities() },
-//                    modifier = Modifier.fillMaxWidth()
-//                )
-//            }
 
             item(key = "focus_timer_card") {
                 AnimatedHomeTimerCard(pulseTrigger = timerPulseTrigger) { animatedModifier ->
-//                    HomeFocusTimerCard(
-//                        heroState = heroDisplayState,
-//                        onPause = onPause,
-//                        onFinish = onFinish,
-//                        onSwitch = onNavigateToAllActivities,
-//                        modifier = animatedModifier.fillMaxWidth()
-//                    )
-
-//                    item {
+                    Box(modifier = animatedModifier) {
                         FocusTimerCard(
                             heroState = heroDisplayState,
                             onStartFocus = onStartFocus,
@@ -241,7 +204,7 @@ private fun HomeScreenContent(
                             onSwitch = onNavigateToAllActivities
                         )
                     }
-             //   }
+                }
             }
 
             item {

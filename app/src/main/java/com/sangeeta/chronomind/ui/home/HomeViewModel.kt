@@ -35,6 +35,8 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
     private val _events = Channel<HomeEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
+    var lastPermissionRequestedActivityId: Int? = null
+        private set
 
     sealed interface HomeEvent {
         data class RequestNotificationPermission(val activityId: Int) : HomeEvent
@@ -122,20 +124,27 @@ class HomeViewModel @Inject constructor(
         activityRepo.selectActivity(activityId)
     }
 
+
+
     fun startFocus() {
         val activityId = heroDisplayState.value?.activityId
             ?: uiState.value.selectedActivity?.id
             ?: return
-
+        lastPermissionRequestedActivityId = activityId
         viewModelScope.launch {
             _events.send(HomeEvent.RequestNotificationPermission(activityId))
         }
     }
 
+    fun onNotificationPermissionDenied() {
+        // optional: update snackbar/message state
+    }
+
     fun continueStartFocusAfterPermission(activityId: Int) {
         viewModelScope.launch {
             val entity = activityRepo.observeById(activityId).firstOrNull() ?: return@launch
-            if (!activityRepo.buildDisplayState(entity).canStart) return@launch
+            val displayState = activityRepo.buildDisplayState(entity)
+            if (!displayState.canStart) return@launch
 
             activityRepo.resumeOrStart(entity)
             startTimerService()

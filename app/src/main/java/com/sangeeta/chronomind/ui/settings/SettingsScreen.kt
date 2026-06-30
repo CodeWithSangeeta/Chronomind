@@ -418,7 +418,6 @@
 
 
 
-
 package com.sangeeta.chronomind.ui.settings
 
 import android.Manifest
@@ -429,15 +428,13 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -449,25 +446,18 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.TrackChanges
-import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -484,13 +474,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.automirrored.rounded.Help
-import androidx.compose.material.icons.rounded.Help
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -498,8 +484,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -511,9 +495,10 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
     onBackClick: () -> Unit,
     onRowClick: (String) -> Unit,
-    onResetOnboarding: () -> Unit = {}
+    onResetOnboarding: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -521,26 +506,11 @@ fun SettingsScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         val newState = when {
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> {
-                NotificationPermissionState.Granted
-            }
-
-            granted -> {
-                NotificationPermissionState.Granted
-            }
-
-            activity != null && !ActivityCompat.shouldShowRequestPermissionRationale(
-                activity,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) -> {
-                NotificationPermissionState.DeniedPermanently
-            }
-
-            else -> {
-                NotificationPermissionState.DeniedRequestable
-            }
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ->
+                NotificationPermissionState.NOT_REQUIRED
+            granted -> NotificationPermissionState.GRANTED
+            else -> NotificationPermissionState.DENIED
         }
-
         viewModel.updateNotificationPermissionState(newState)
     }
 
@@ -551,20 +521,23 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
+        viewModel.events.collect { event: SettingsEvent ->
             when (event) {
                 SettingsEvent.RequestNotificationPermission -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        viewModel.updateNotificationPermissionState(
+                            NotificationPermissionState.NOT_REQUIRED
+                        )
                     }
                 }
 
-                SettingsEvent.OpenAppNotificationSettings -> {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                        }
-                    )
+                SettingsEvent.OpenNotificationSettings -> {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    }
+                    context.startActivity(intent)
                 }
             }
         }
@@ -574,9 +547,11 @@ fun SettingsScreen(
         uiState = uiState,
         onBackClick = onBackClick,
         onRowClick = onRowClick,
-        onNotificationsClick = viewModel::onNotificationsClick,
+        onNotificationsToggle = viewModel::onNotificationsToggle,
         onDailyReminderChanged = viewModel::setDailyReminder,
-        onReminderTimeSelected = viewModel::setReminderTime,
+        onReminderHourChange = viewModel::onReminderHourChange,
+        onReminderMinuteChange = viewModel::onReminderMinuteChange,
+        onReminderAmPmChange = viewModel::onReminderAmPmChange,
         onCheckInStyleSelected = viewModel::setCheckInStyle,
         onStreakOnMissSelected = viewModel::setStreakOnMiss,
         onShowClearDataConfirm = viewModel::showClearDataConfirm,
@@ -591,16 +566,18 @@ private fun SettingsScreenContent(
     uiState: SettingsUiState,
     onBackClick: () -> Unit,
     onRowClick: (String) -> Unit,
-    onNotificationsClick: () -> Unit,
+    onNotificationsToggle: (Boolean) -> Unit,
     onDailyReminderChanged: (Boolean) -> Unit,
-    onReminderTimeSelected: (String) -> Unit,
+    onReminderHourChange: (Int) -> Unit,
+    onReminderMinuteChange: (Int) -> Unit,
+    onReminderAmPmChange: (String) -> Unit,
     onCheckInStyleSelected: (String) -> Unit,
     onStreakOnMissSelected: (String) -> Unit,
     onShowClearDataConfirm: (Boolean) -> Unit,
     onShowResetConfirm: (Boolean) -> Unit,
     onConfirmClearData: () -> Unit,
     onConfirmReset: () -> Unit
-) {
+){
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -612,69 +589,49 @@ private fun SettingsScreenContent(
             onBackClick = onBackClick,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp)
+                .padding(horizontal = 18.dp, vertical = 8.dp)
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = 4.dp,
-                bottom = 20.dp
-            ),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             item {
-                SettingsSectionCard(
-                    title = "GENERAL",
-                    icon = Icons.Rounded.Settings
-                ) {
-                    SettingsRow(
-                        item = SettingsRowUiModel(
-                            id = "notifications",
-                            title = "Notifications",
-                            subtitle = "Reminders and alerts",
-                            icon = Icons.Rounded.Notifications,
-                            value = uiState.notificationPermissionState.toDisplayLabel()
-                        ),
-                        onClick = onNotificationsClick
+                SettingsSectionCard(title = "GENERAL") {
+                    SettingsToggleRow(
+                        icon = Icons.Rounded.Notifications,
+                        label = "Notifications",
+                        subtitle = "Allow app reminders and alerts",
+                        checked = uiState.notificationPermissionState == NotificationPermissionState.GRANTED,
+                        onCheckedChange = onNotificationsToggle
                     )
 
                     SettingsDivider()
 
-                    SettingsToggleRow(
-                        icon = Icons.Rounded.NotificationsActive,
-                        label = "Daily reminder",
-                        subtitle = "Default reminder for new activities",
-                        checked = uiState.isDailyReminderEnabled,
-                        onCheckedChange = onDailyReminderChanged
+                    SettingsReminderSection(
+                        isEnabled = uiState.isDailyReminderEnabled,
+                        selectedHour = uiState.reminderHour,
+                        selectedMinute = uiState.reminderMinute,
+                        selectedAmPm = uiState.reminderAmPm,
+                        onReminderToggle = onDailyReminderChanged,
+                        onHourChange = onReminderHourChange,
+                        onMinuteChange = onReminderMinuteChange,
+                        onAmPmChange = onReminderAmPmChange
                     )
-
-                    AnimatedVisibility(
-                        visible = uiState.isDailyReminderEnabled,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            ReminderTimePicker(
-                                selected = uiState.reminderTime,
-                                onSelected = onReminderTimeSelected
-                            )
-                        }
+                     }
                     }
-                }
-            }
 
             item {
                 SettingsSectionCard(
-                    title = "FOCUS DEFAULTS",
-                    icon = Icons.Rounded.TrackChanges,
+                    title = "FOCUS",
                     footerText = "These are app-level defaults. Individual activities can override them."
                 ) {
                     SettingsDropdownRow(
-                        label = "Missed Streak",
+                        icon = Icons.Rounded.TrackChanges,
+                        label = "Missed streak",
                         subtitle = "Default rule for new activities",
                         selected = uiState.streakOnMiss,
                         options = listOf("CONTINUE", "RESET"),
@@ -688,13 +645,14 @@ private fun SettingsScreenContent(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     SettingsDropdownRow(
-                        label = "Check-in Style",
+                        icon = Icons.Rounded.TrackChanges,
+                        label = "Check-in style",
                         subtitle = "Default way to mark complete",
                         selected = uiState.checkInStyle,
-                        options = listOf("MANUAL", "AUTO_CHECK"),
+                        options = listOf("MANUAL", "AUTOCHECK"),
                         displayMap = mapOf(
                             "MANUAL" to "Manual check-in",
-                            "AUTO_CHECK" to "Auto check-in"
+                            "AUTOCHECK" to "Auto check-in"
                         ),
                         onSelected = onCheckInStyleSelected
                     )
@@ -702,55 +660,57 @@ private fun SettingsScreenContent(
             }
 
             item {
-                SettingsSectionCard(
-                    title = "WIDGETS",
-                    icon = Icons.Rounded.Widgets,
-                    items = uiState.widgetItems,
-                    onRowClick = onRowClick
-                )
-            }
-
-            item {
-                SettingsSectionCard(
-                    title = "HELP",
-                    icon = Icons.Rounded.Help,
-                    items = uiState.helpItems,
-                    onRowClick = onRowClick
-                )
-            }
-
-            item {
-                SettingsSectionCard(
-                    title = "PLAY STORE TRUST",
-                    icon = Icons.Rounded.Shield,
-                    items = uiState.trustItems,
-                    onRowClick = onRowClick
-                )
-            }
-
-            item {
-                SettingsSectionCard(
-                    title = "ABOUT",
-                    icon = Icons.Rounded.Info,
-                    items = uiState.aboutItems,
-                    onRowClick = onRowClick
-                )
-            }
-
-            item {
-                SettingsSectionCard(
-                    title = "YOUR STATS",
-                    icon = Icons.Rounded.CheckCircle
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        StatBadge(
-                            label = "Activities",
-                            value = uiState.totalActivities.toString(),
-                            modifier = Modifier.weight(1f)
+                SettingsSectionCard(title = "WIDGETS") {
+                    uiState.widgetItems.forEachIndexed { index, item ->
+                        SettingsRow(
+                            item = item,
+                            onClick = { onRowClick(item.id) }
                         )
+                        if (index != uiState.widgetItems.lastIndex) {
+                            SettingsDivider()
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSectionCard(title = "HELP") {
+                    uiState.helpItems.forEachIndexed { index, item ->
+                        SettingsRow(
+                            item = item,
+                            onClick = { onRowClick(item.id) }
+                        )
+                        if (index != uiState.helpItems.lastIndex) {
+                            SettingsDivider()
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSectionCard(title = "PLAY STORE TRUST") {
+                    uiState.trustItems.forEachIndexed { index, item ->
+                        SettingsRow(
+                            item = item,
+                            onClick = { onRowClick(item.id) }
+                        )
+                        if (index != uiState.trustItems.lastIndex) {
+                            SettingsDivider()
+                        }
+                    }
+                }
+            }
+
+            item {
+                SettingsSectionCard(title = "ABOUT") {
+                    uiState.aboutItems.forEachIndexed { index, item ->
+                        SettingsRow(
+                            item = item,
+                            onClick = { onRowClick(item.id) }
+                        )
+                        if (index != uiState.aboutItems.lastIndex) {
+                            SettingsDivider()
+                        }
                     }
                 }
             }
@@ -761,31 +721,27 @@ private fun SettingsScreenContent(
                     onResetOnboardingClick = { onShowResetConfirm(true) }
                 )
             }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-            }
         }
-    }
 
-    if (uiState.showClearDataConfirm) {
-        ConfirmDialog(
-            title = "Clear all activities?",
-            body = "This will permanently delete all your activities and session history.",
-            confirmText = "Yes, clear all",
-            onConfirm = onConfirmClearData,
-            onDismiss = { onShowClearDataConfirm(false) }
-        )
-    }
+        if (uiState.showClearDataConfirm) {
+            ConfirmDialog(
+                title = "Clear all activities?",
+                body = "This will permanently delete all your activities and session history.",
+                confirmText = "Yes, clear all",
+                onConfirm = onConfirmClearData,
+                onDismiss = { onShowClearDataConfirm(false) }
+            )
+        }
 
-    if (uiState.showResetConfirm) {
-        ConfirmDialog(
-            title = "Reset onboarding?",
-            body = "You will go through the onboarding flow again. Your activities are not affected.",
-            confirmText = "Yes, reset",
-            onConfirm = onConfirmReset,
-            onDismiss = { onShowResetConfirm(false) }
-        )
+        if (uiState.showResetConfirm) {
+            ConfirmDialog(
+                title = "Reset onboarding?",
+                body = "You will go through the onboarding flow again. Your activities are not affected.",
+                confirmText = "Yes, reset",
+                onConfirm = onConfirmReset,
+                onDismiss = { onShowResetConfirm(false) }
+            )
+        }
     }
 }
 
@@ -794,144 +750,62 @@ private fun SettingsTopBar(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(AuraColors.SurfaceCard)
+                .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
+                .clickable(onClick = onBackClick),
+            contentAlignment = Alignment.Center
         ) {
-            CircleBackButton(onClick = onBackClick)
-            Spacer(modifier = Modifier.width(14.dp))
-            Text(
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = "Back",
+                tint = AuraColors.TextPrimary
+            )
+        }
+        Text(
                 text = "Settings",
-                fontSize = 22.sp,
-                style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.Bold),
+                style = AuraTypography.DisplayMedium,
                 color = AuraColors.TextPrimary
             )
-        }
 
-        Text(
-            text = "Customize the app your way.",
-            fontSize = 12.sp,
-            style = AuraTypography.BodySmall,
-            color = AuraColors.TextSecondary,
-            modifier = Modifier.padding(start = 58.dp)
-        )
-    }
-}
-
-@Composable
-private fun CircleBackButton(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(Color(0xFF111111))
-            .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.ArrowBack,
-            contentDescription = "Back",
-            tint = AuraColors.TextPrimary
-        )
     }
 }
 
 @Composable
 private fun SettingsSectionCard(
     title: String,
-    icon: ImageVector,
-    items: List<SettingsRowUiModel>,
-    onRowClick: (String) -> Unit,
-    footerText: String? = null
-) {
-    SettingsSectionCard(
-        title = title,
-        icon = icon,
-        footerText = footerText
-    ) {
-        items.forEachIndexed { index, item ->
-            SettingsRow(
-                item = item,
-                onClick = { onRowClick(item.id) }
-            )
-
-            if (index != items.lastIndex) {
-                SettingsDivider()
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsSectionCard(
-    title: String,
-    icon: ImageVector,
     footerText: String? = null,
-    content: @Composable Column.() -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 14.dp,
-                shape = RoundedCornerShape(28.dp),
-                ambientColor = AuraColors.YellowGlow.copy(alpha = 0.08f),
-                spotColor = AuraColors.YellowGlow.copy(alpha = 0.08f)
-            )
-            .clip(RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF121212), Color(0xFF0C0C0C))
+                    listOf(
+                        AuraColors.SurfaceCardLight,
+                        AuraColors.SurfaceCard
+                    )
                 )
             )
-            .border(
-                width = 1.dp,
-                color = AuraColors.YellowPrimary.copy(alpha = 0.10f),
-                shape = RoundedCornerShape(28.dp)
-            )
-            .padding(18.dp),
+            .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(22.dp))
+            .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .shadow(
-                        elevation = 10.dp,
-                        shape = CircleShape,
-                        ambientColor = AuraColors.YellowGlow.copy(alpha = 0.20f),
-                        spotColor = AuraColors.YellowGlow.copy(alpha = 0.20f)
-                    )
-                    .clip(CircleShape)
-                    .background(Color(0xFF18130A))
-                    .border(
-                        width = 1.dp,
-                        color = AuraColors.YellowPrimary.copy(alpha = 0.22f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = AuraColors.YellowPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = title,
-                style = AuraTypography.LabelMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
-                ),
-                color = AuraColors.YellowPrimary
-            )
-        }
+        Text(
+            text = title,
+            style = AuraTypography.LabelMedium,
+            color = AuraColors.TextMuted
+        )
 
         content()
 
@@ -939,8 +813,9 @@ private fun SettingsSectionCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(Color(0xFF171717))
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AuraColors.BackgroundDark)
+                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(16.dp))
                     .padding(horizontal = 14.dp, vertical = 12.dp)
             ) {
                 Text(
@@ -961,32 +836,17 @@ private fun SettingsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = !item.isValueOnly, onClick = onClick)
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF18120A))
-                .border(
-                    1.dp,
-                    AuraColors.YellowPrimary.copy(alpha = 0.25f),
-                    CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = null,
-                tint = AuraColors.YellowPrimary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        RowIcon(icon = item.icon)
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
             Text(
                 text = item.title,
                 style = AuraTypography.TitleMedium,
@@ -994,11 +854,12 @@ private fun SettingsRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
             Text(
                 text = item.subtitle,
                 style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary
+                color = AuraColors.TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
@@ -1043,16 +904,6 @@ private fun SettingsRow(
 }
 
 @Composable
-private fun SettingsDivider() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color.White.copy(alpha = 0.04f))
-    )
-}
-
-@Composable
 private fun SettingsToggleRow(
     icon: ImageVector,
     label: String,
@@ -1067,27 +918,11 @@ private fun SettingsToggleRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF18120A))
-                .border(
-                    1.dp,
-                    AuraColors.YellowPrimary.copy(alpha = 0.25f),
-                    CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = AuraColors.YellowPrimary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        RowIcon(icon = icon)
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
             Text(
                 text = label,
                 style = AuraTypography.TitleMedium,
@@ -1104,10 +939,10 @@ private fun SettingsToggleRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
+                checkedThumbColor = AuraColors.BackgroundDark,
                 checkedTrackColor = AuraColors.YellowPrimary,
                 uncheckedThumbColor = AuraColors.TextMuted,
-                uncheckedTrackColor = Color(0xFF2B2B2B)
+                uncheckedTrackColor = AuraColors.SurfaceCardLight
             )
         )
     }
@@ -1115,6 +950,7 @@ private fun SettingsToggleRow(
 
 @Composable
 private fun SettingsDropdownRow(
+    icon: ImageVector,
     label: String,
     subtitle: String,
     selected: String,
@@ -1124,35 +960,42 @@ private fun SettingsDropdownRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column {
-            Text(
-                text = label,
-                style = AuraTypography.TitleMedium,
-                color = AuraColors.TextPrimary
-            )
-            Text(
-                text = subtitle,
-                style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            RowIcon(icon = icon)
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = AuraTypography.TitleMedium,
+                    color = AuraColors.TextPrimary
+                )
+                Text(
+                    text = subtitle,
+                    style = AuraTypography.BodyMedium,
+                    color = AuraColors.TextSecondary
+                )
+            }
         }
 
         Box {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF121212))
-                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(AuraColors.BackgroundDark)
+                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(14.dp))
                     .clickable { expanded = true }
                     .padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = displayMap[selected] ?: selected,
-                    style = AuraTypography.TitleMedium,
+                    style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = AuraColors.TextPrimary
                 )
 
@@ -1173,12 +1016,12 @@ private fun SettingsDropdownRow(
                         text = {
                             Text(
                                 text = displayMap[option] ?: option,
+                                style = AuraTypography.BodyMedium,
                                 color = if (option == selected) {
                                     AuraColors.YellowPrimary
                                 } else {
                                     AuraColors.TextPrimary
-                                },
-                                style = AuraTypography.TitleMedium
+                                }
                             )
                         },
                         onClick = {
@@ -1208,43 +1051,47 @@ private fun ReminderTimePicker(
         "08:00 PM",
         "09:00 PM"
     )
+
     var expanded by remember { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = "Reminder time",
-            style = AuraTypography.TitleMedium,
-            color = AuraColors.TextPrimary
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            RowIcon(icon = Icons.Rounded.Schedule)
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Reminder time",
+                    style = AuraTypography.TitleMedium,
+                    color = AuraColors.TextPrimary
+                )
+                Text(
+                    text = "Choose the default reminder time",
+                    style = AuraTypography.BodyMedium,
+                    color = AuraColors.TextSecondary
+                )
+            }
+        }
 
         Box {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF121212))
-                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(AuraColors.BackgroundDark)
+                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(14.dp))
                     .clickable { expanded = true }
                     .padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Schedule,
-                        contentDescription = null,
-                        tint = AuraColors.TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = selected,
-                        style = AuraTypography.TitleMedium,
-                        color = AuraColors.TextPrimary
-                    )
-                }
+                Text(
+                    text = selected,
+                    style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.Medium),
+                    color = AuraColors.TextPrimary
+                )
 
                 Icon(
                     imageVector = Icons.Rounded.ExpandMore,
@@ -1263,12 +1110,12 @@ private fun ReminderTimePicker(
                         text = {
                             Text(
                                 text = time,
+                                style = AuraTypography.BodyMedium,
                                 color = if (time == selected) {
                                     AuraColors.YellowPrimary
                                 } else {
                                     AuraColors.TextPrimary
-                                },
-                                style = AuraTypography.TitleMedium
+                                }
                             )
                         },
                         onClick = {
@@ -1283,33 +1130,6 @@ private fun ReminderTimePicker(
 }
 
 @Composable
-private fun StatBadge(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF151515))
-            .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(18.dp))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Text(
-            text = label,
-            style = AuraTypography.BodySmall,
-            color = AuraColors.TextSecondary
-        )
-        Text(
-            text = value,
-            style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.Bold),
-            color = AuraColors.YellowPrimary
-        )
-    }
-}
-
-@Composable
 private fun DangerZoneCard(
     onClearDataClick: () -> Unit,
     onResetOnboardingClick: () -> Unit
@@ -1317,21 +1137,21 @@ private fun DangerZoneCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFF120E0E))
-            .border(1.dp, Color(0xFF442626), RoundedCornerShape(24.dp))
-            .padding(18.dp),
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color(0xFF1A0A0A))
+            .border(1.dp, Color(0xFFE35D5D).copy(alpha = 0.28f), RoundedCornerShape(22.dp))
+            .padding(horizontal = 18.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Danger Zone",
-            style = AuraTypography.TitleMedium,
+            text = "DANGER ZONE",
+            style = AuraTypography.LabelMedium,
             color = Color(0xFFE35D5D)
         )
 
         Text(
             text = "These actions are permanent and cannot be undone.",
-            style = AuraTypography.BodyMedium,
+            style = AuraTypography.BodySmall,
             color = AuraColors.TextSecondary
         )
 
@@ -1358,9 +1178,9 @@ private fun DangerButton(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xFF1B1212))
-            .border(1.dp, Color(0xFF5B2D2D), RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFF221212))
+            .border(1.dp, Color(0xFFE35D5D).copy(alpha = 0.22f), RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1368,9 +1188,9 @@ private fun DangerButton(
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(38.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF2A1515)),
+                .background(Color(0xFF311818)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -1441,40 +1261,50 @@ private fun ConfirmDialog(
     )
 }
 
+@Composable
+private fun SettingsDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Color.White.copy(alpha = 0.05f))
+    )
+}
+
+@Composable
+private fun RowIcon(icon: ImageVector) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(AuraColors.YellowPrimary.copy(alpha = 0.10f))
+            .border(1.dp, AuraColors.YellowPrimary.copy(alpha = 0.22f), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = AuraColors.YellowPrimary,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
 private fun resolveNotificationPermissionState(activity: Activity?): NotificationPermissionState {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        return NotificationPermissionState.Granted
+        return NotificationPermissionState.NOT_REQUIRED
     }
 
-    val safeActivity = activity ?: return NotificationPermissionState.Unknown
+    val safeActivity = activity ?: return NotificationPermissionState.DENIED
 
-    return when {
+    return if (
         ContextCompat.checkSelfPermission(
             safeActivity,
             Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED -> {
-            NotificationPermissionState.Granted
-        }
-
-        ActivityCompat.shouldShowRequestPermissionRationale(
-            safeActivity,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) -> {
-            NotificationPermissionState.DeniedRequestable
-        }
-
-        else -> {
-            NotificationPermissionState.DeniedPermanently
-        }
+        ) == PackageManager.PERMISSION_GRANTED
+    ) {
+        NotificationPermissionState.GRANTED
+    } else {
+        NotificationPermissionState.DENIED
     }
 }
-
-private fun NotificationPermissionState.toDisplayLabel(): String {
-    return when (this) {
-        NotificationPermissionState.Granted -> "Allowed"
-        NotificationPermissionState.DeniedRequestable -> "Tap to allow"
-        NotificationPermissionState.DeniedPermanently -> "Open settings"
-        NotificationPermissionState.Unknown -> "Manage"
-    }
-}
-//}

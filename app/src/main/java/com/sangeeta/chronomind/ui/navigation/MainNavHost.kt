@@ -52,24 +52,6 @@ fun MainNavHost(
         }
 
 
-//        composable(
-//            route = ChronoRoutes.CreateEditActivity.route,
-//            arguments = listOf(
-//                navArgument(ChronoRoutes.CreateEditActivity.ARG) {
-//                    type = NavType.IntType
-//                    defaultValue = -1
-//                }
-//            )
-//        ) {
-//            CreateEditActivityScreen(
-//                onBackClick = { navController.popBackStack() },
-//                onSaved     = { navController.popBackStack() },
-//                onDeleted   = { navController.popBackStack() }
-//            )
-//        }
-
-
-
         composable(
             route = ChronoRoutes.CreateEditActivity.route,
             arguments = listOf(
@@ -106,9 +88,25 @@ fun MainNavHost(
 
         composable(route = ChronoRoutes.Settings.route) {
             SettingsScreen(
-                onBackClick = { navController.popBackStack() }
-            )
+                onBackClick = { navController.popBackStack() },
+                onRowClick = { rowId ->
+                    when (rowId) {
+                        "widgetsetup" -> { /* navController.navigate(ChronoRoutes.WidgetSetup.route) */ }
+                        "helpcenter"  -> { /* open help url */ }
+                        "shareapp"    -> { /* share intent */ }
+                        "rateapp"     -> { /* open play store */ }
+                        "privacy"     -> { /* open privacy url */ }
+                        "terms"       -> { /* open terms url */ }
+                        "permissions" -> { /* open app settings */ }
+                        "developer"   -> { /* open portfolio/linkedin */ }
+                        else          -> { }
+                    }
+                },
 
+                onResetOnboarding = {
+                    navController.popBackStack()
+                }
+            )
         }
 
         composable(route = ChronoRoutes.WidgetSetup.route) {
