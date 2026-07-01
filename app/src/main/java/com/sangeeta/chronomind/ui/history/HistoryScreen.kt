@@ -266,7 +266,7 @@ private fun HistoryIconButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = AuraColors.TextPrimary,
+            tint = if(contentDescription == "Back")AuraColors.TextPrimary else AuraColors.YellowPrimary,
             modifier = Modifier.size(20.dp),
         )
     }

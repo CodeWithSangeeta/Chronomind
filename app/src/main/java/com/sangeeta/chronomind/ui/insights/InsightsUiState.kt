@@ -52,7 +52,9 @@ data class TopActivityUiModel(
     val name: String,
     val totalFocusTime: String,
     val sharePercent: Int,
-    val icon: ImageVector
+    val icon: ImageVector,
+    val tintColor: androidx.compose.ui.graphics.Color,
+    val backgroundColor: androidx.compose.ui.graphics.Color
 )
 
 data class PatternInsightUiModel(

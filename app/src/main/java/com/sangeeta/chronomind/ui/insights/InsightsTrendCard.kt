@@ -21,9 +21,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CalendarViewWeek
 import androidx.compose.material.icons.rounded.DateRange
-import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -42,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -418,12 +418,12 @@ private fun ProductivePatternDialog(
                         text = pattern.highlight.ifBlank { "No clear pattern yet" },
                         style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = AuraColors.YellowPrimary,
-                        maxLines = 1
+                        maxLines = 1,
                     )
 
                     if (pattern.value.isNotBlank() && pattern.highlight.isNotBlank()) {
                         Text(
-                            text = "· ${pattern.value}",
+                            text = "${pattern.value}",
                             style = AuraTypography.BodyMedium,
                             color = AuraColors.TextPrimary,
                             maxLines = 1
@@ -431,15 +431,15 @@ private fun ProductivePatternDialog(
                     }
                 }
 
-                Text(
-                    text = if (pattern.highlight.isBlank()) {
-                        "Not enough finished session data yet."
-                    } else {
-                        subtitle
-                    },
-                    style = AuraTypography.BodyMedium,
-                    color = AuraColors.TextSecondary
-                )
+                    Text(
+                        text = if (pattern.highlight.isBlank()) {
+                            "Not enough finished session data yet."
+                        } else {
+                            subtitle
+                        },
+                        style = AuraTypography.BodySmall,
+                        color = AuraColors.TextSecondary
+                    )
             }
         },
         confirmButton = {

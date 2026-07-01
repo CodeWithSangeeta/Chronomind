@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.local.db.entity.SessionEntity
 import com.sangeeta.chronomind.repository.ActivityRepository
+import com.sangeeta.chronomind.ui.components.ActivityColorResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -132,8 +133,7 @@ class HistoryViewModel @Inject constructor(
     }
 
     private fun SessionEntity.toUiModel(): HistorySessionUiModel {
-        val safeColor = runCatching { Color(android.graphics.Color.parseColor(activityColorHex)) }
-            .getOrElse { Color(0xFFF6C445) }
+        val safeColor = ActivityColorResolver.tintColor(activityColorHex)
 
         return HistorySessionUiModel(
             id = id,

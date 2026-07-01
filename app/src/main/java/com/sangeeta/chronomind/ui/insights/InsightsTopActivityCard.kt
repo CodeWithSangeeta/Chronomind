@@ -98,15 +98,15 @@ private fun TopActivityRow(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(AuraColors.YellowPrimary.copy(alpha = 0.10f))
-                    .border(1.dp, AuraColors.YellowPrimary.copy(alpha = 0.18f), CircleShape),
+                    .background(activity.backgroundColor)
+                    .border(1.dp, activity.tintColor.copy(alpha = 0.18f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = activity.icon,
                     contentDescription = activity.name,
-                    tint = AuraColors.YellowPrimary,
-                    modifier = Modifier.size(22.dp)
+                    tint = activity.tintColor,
+                    modifier = Modifier.size(26.dp)
                 )
             }
 
@@ -141,9 +141,11 @@ private fun TopActivityRow(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(start = 80.dp)
                 .height(8.dp)
                 .clip(RoundedCornerShape(50.dp))
                 .background(Color(0xFF1B1B1B))
+
         ) {
             Box(
                 modifier = Modifier

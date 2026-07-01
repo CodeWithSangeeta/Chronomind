@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.local.db.entity.SessionEntity
 import com.sangeeta.chronomind.repository.ActivityRepository
+import com.sangeeta.chronomind.ui.components.ActivityColorResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +27,7 @@ class InsightsViewModel @Inject constructor(
     private val activityRepo: ActivityRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(InsightsUiState(isLoading = true))
+   private val _uiState = MutableStateFlow(InsightsUiState(isLoading = true))
     val uiState: StateFlow<InsightsUiState> = _uiState.asStateFlow()
 
     private var observeJob: Job? = null
@@ -143,13 +144,17 @@ class InsightsViewModel @Inject constructor(
                     numerator = activitySeconds,
                     denominator = totalSec
                 )
+                val tint = ActivityColorResolver.tintColor(latest.activityColorHex)
+                val bg = ActivityColorResolver.backgroundColor(latest.activityColorHex)
 
                 TopActivityUiModel(
                     rank = index + 1,
                     name = latest.activityName,
                     totalFocusTime = formatSeconds(activitySeconds),
                     sharePercent = sharePercent,
-                    icon = latest.activityIcon
+                    icon = latest.activityIcon,
+                    tintColor = tint,
+                    backgroundColor = bg
                 )
             }
 

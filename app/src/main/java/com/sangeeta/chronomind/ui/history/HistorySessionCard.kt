@@ -30,6 +30,8 @@ import com.sangeeta.chronomind.ui.theme.AuraTypography
 fun HistorySessionCard(
     session: HistorySessionUiModel,
 ) {
+    val iconBg = session.accentColor.copy(alpha = 0.12f)
+    val iconBorder = session.accentColor.copy(alpha = 0.24f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -40,12 +42,11 @@ fun HistorySessionCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        // Icon with activity-color background
         Box(
             modifier = Modifier
                 .size(52.dp)
                 .clip(CircleShape)
-                .background(session.accentColor.copy(alpha = 0.18f))
+                .background(iconBg)
                 .border(
                     width = 1.dp,
                     color = session.accentColor.copy(alpha = 0.30f),
@@ -57,11 +58,10 @@ fun HistorySessionCard(
                 imageVector = session.icon,
                 contentDescription = null,
                 tint = session.accentColor,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(28.dp),
             )
         }
 
-        // Name + duration
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(5.dp),
