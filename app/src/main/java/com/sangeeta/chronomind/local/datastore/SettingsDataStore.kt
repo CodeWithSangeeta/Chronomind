@@ -26,8 +26,18 @@ class SettingsDataStore @Inject constructor(
     private val store = context.settingsDataStore
 
     private object Keys {
+        val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val DAILY_REMINDER_ENABLED = booleanPreferencesKey("daily_reminder_enabled")
         val REMINDER_TIME = stringPreferencesKey("reminder_time")
+    }
+
+    val notificationsEnabled: Flow<Boolean> =
+        store.data
+            .catch { emit(emptyPreferences()) }
+            .map { prefs -> prefs[Keys.NOTIFICATIONS_ENABLED] ?: false }
+
+    suspend fun setNotificationsEnabled(value: Boolean) {
+        store.edit { prefs -> prefs[Keys.NOTIFICATIONS_ENABLED] = value }
     }
 
     val isDailyReminderEnabled: Flow<Boolean> =

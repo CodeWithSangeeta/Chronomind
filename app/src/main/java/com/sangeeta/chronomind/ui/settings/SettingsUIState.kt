@@ -21,7 +21,7 @@ data class SettingsRowUiModel(
 )
 
 data class SettingsUiState(
-    val notificationPermissionState: NotificationPermissionState = NotificationPermissionState.DENIED,
+    val notificationsEnabled: Boolean = false,
     val isDailyReminderEnabled: Boolean = false,
     val reminderTime: String = "07:00 AM",
     val reminderHour: Int = 7,

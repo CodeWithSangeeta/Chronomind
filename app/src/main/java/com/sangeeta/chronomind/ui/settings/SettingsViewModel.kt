@@ -244,20 +244,23 @@ class SettingsViewModel @Inject constructor(
     private val _events = Channel<SettingsEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
+
     fun onNotificationsToggle(enabled: Boolean) {
         viewModelScope.launch {
-            val isGranted =
-                localUiState.value.notificationPermissionState == NotificationPermissionState.GRANTED
-
-            when {
-                enabled && !isGranted -> _events.send(SettingsEvent.RequestNotificationPermission)
-                !enabled && isGranted -> _events.send(SettingsEvent.OpenNotificationSettings)
+            if (enabled) {
+                _events.send(SettingsEvent.RequestNotificationPermission)
+            } else {
+                settingsDataStore.setNotificationsEnabled(false)
+                localUiState.update { it.copy(notificationsEnabled = false) }
             }
         }
     }
 
-    fun updateNotificationPermissionState(state: NotificationPermissionState) {
-        localUiState.update { it.copy(notificationPermissionState = state) }
+    fun onNotificationPermissionResult(granted: Boolean) {
+        viewModelScope.launch {
+            settingsDataStore.setNotificationsEnabled(granted)
+            localUiState.update { it.copy(notificationsEnabled = granted) }
+        }
     }
 
     fun onReminderHourChange(hour: Int) {
@@ -420,7 +423,6 @@ class SettingsViewModel @Inject constructor(
 
 sealed interface SettingsEvent {
     data object RequestNotificationPermission : SettingsEvent
-    data object OpenNotificationSettings : SettingsEvent
 }
 
 

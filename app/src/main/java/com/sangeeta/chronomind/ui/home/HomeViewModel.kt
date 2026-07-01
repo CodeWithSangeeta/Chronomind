@@ -2,14 +2,18 @@ package com.sangeeta.chronomind.ui.home
 
 import android.content.Context
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
 import com.sangeeta.chronomind.service.TimerForegroundService
 import com.sangeeta.chronomind.ui.mapper.toUiModel
 import com.sangeeta.chronomind.ui.model.ActivityDisplayState
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
+import com.sangeeta.chronomind.util.NotificationPermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -127,18 +131,22 @@ class HomeViewModel @Inject constructor(
 
 
     fun startFocus() {
-        val activityId = heroDisplayState.value?.activityId
-            ?: uiState.value.selectedActivity?.id
-            ?: return
+        val activityId = heroDisplayState.value?.activityId ?: uiState.value.selectedActivity?.id ?: return
         lastPermissionRequestedActivityId = activityId
+
         viewModelScope.launch {
-            _events.send(HomeEvent.RequestNotificationPermission(activityId))
+            if (NotificationPermissionHelper.isGranted(context)) {
+                continueStartFocusAfterPermission(activityId)
+            } else {
+                _events.send(HomeEvent.RequestNotificationPermission(activityId))
+            }
         }
     }
 
     fun onNotificationPermissionDenied() {
-        // optional: update snackbar/message state
+        lastPermissionRequestedActivityId = null
     }
+
 
     fun continueStartFocusAfterPermission(activityId: Int) {
         viewModelScope.launch {

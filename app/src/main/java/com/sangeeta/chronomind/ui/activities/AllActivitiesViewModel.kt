@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.service.TimerForegroundService
 import com.sangeeta.chronomind.ui.mapper.toUiModel
+import com.sangeeta.chronomind.util.NotificationPermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -23,6 +24,7 @@ import kotlinx.coroutines.launch
 
 sealed interface AllActivitiesEvent {
     data object NavigateToHome : AllActivitiesEvent
+    data class RequestNotificationPermission(val activityId: Int) : AllActivitiesEvent
 }
 
 @HiltViewModel
@@ -30,7 +32,8 @@ class AllActivitiesViewModel @Inject constructor(
     private val activityRepository: ActivityRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
-
+    var lastPermissionRequestedActivityId: Int? = null
+        private set
     private val searchQuery = MutableStateFlow("")
     private val sortOption = MutableStateFlow(ActivitySortOption.RECENTLY_USED)
 
@@ -87,13 +90,32 @@ class AllActivitiesViewModel @Inject constructor(
         viewModelScope.launch {
             val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
             val uiModel = entity.toUiModel()
+            if (!uiModel.canStart) return@launch
 
+            lastPermissionRequestedActivityId = activityId
+
+            if (NotificationPermissionHelper.isGranted(context)) {
+                continueStartAfterPermission(activityId)
+            } else {
+                _events.send(AllActivitiesEvent.RequestNotificationPermission(activityId))
+            }
+        }
+    }
+
+    fun continueStartAfterPermission(activityId: Int) {
+        viewModelScope.launch {
+            val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
+            val uiModel = entity.toUiModel()
             if (!uiModel.canStart) return@launch
 
             activityRepository.switchToActivity(entity)
             startTimerService()
             _events.send(AllActivitiesEvent.NavigateToHome)
         }
+    }
+
+    fun onNotificationPermissionDenied() {
+        lastPermissionRequestedActivityId = null
     }
 
     private fun startTimerService() {

@@ -95,24 +95,38 @@ fun HomeScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is HomeViewModel.HomeEvent.RequestNotificationPermission -> {
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                        viewModel.continueStartFocusAfterPermission(event.activityId)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
-                        val granted = ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED
-
-                        if (granted) {
-                            viewModel.continueStartFocusAfterPermission(event.activityId)
-                        } else {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
+                        viewModel.continueStartFocusAfterPermission(event.activityId)
                     }
                 }
             }
         }
     }
+
+//    LaunchedEffect(Unit) {
+//        viewModel.events.collect { event ->
+//            when (event) {
+//                is HomeViewModel.HomeEvent.RequestNotificationPermission -> {
+//                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+//                        viewModel.continueStartFocusAfterPermission(event.activityId)
+//                    } else {
+//                        val granted = ContextCompat.checkSelfPermission(
+//                            context,
+//                            Manifest.permission.POST_NOTIFICATIONS
+//                        ) == PackageManager.PERMISSION_GRANTED
+//
+//                        if (granted) {
+//                            viewModel.continueStartFocusAfterPermission(event.activityId)
+//                        } else {
+//                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     LaunchedEffect(Unit) {
         viewModel.scrollToTimerSignal.collect {

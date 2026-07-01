@@ -1,5 +1,9 @@
 package com.sangeeta.chronomind.ui.activities
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,15 +52,36 @@ fun AllActivitiesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val activityId = viewModel.lastPermissionRequestedActivityId
+            ?: return@rememberLauncherForActivityResult
+
+        if (granted) {
+            viewModel.continueStartAfterPermission(activityId)
+        } else {
+            viewModel.onNotificationPermissionDenied()
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is AllActivitiesEvent.NavigateToHome -> onSelectActivityClick()
+                is AllActivitiesEvent.RequestNotificationPermission -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        viewModel.continueStartAfterPermission(event.activityId)
+                    }
+                }
             }
         }
     }
 
-    AllActivitiesScreenContent(
+
+        AllActivitiesScreenContent(
         uiState = uiState,
         onBackClick = onBackClick,
         onSearchChange = viewModel::onSearchQueryChange,

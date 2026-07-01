@@ -505,43 +505,53 @@ fun SettingsScreen(
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
-        val newState = when {
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ->
-                NotificationPermissionState.NOT_REQUIRED
-            granted -> NotificationPermissionState.GRANTED
-            else -> NotificationPermissionState.DENIED
-        }
-        viewModel.updateNotificationPermissionState(newState)
+        viewModel.onNotificationPermissionResult(granted)
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.updateNotificationPermissionState(
-            resolveNotificationPermissionState(activity)
-        )
-    }
+
 
     LaunchedEffect(Unit) {
-        viewModel.events.collect { event: SettingsEvent ->
+        viewModel.events.collect { event ->
             when (event) {
                 SettingsEvent.RequestNotificationPermission -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
-                        viewModel.updateNotificationPermissionState(
-                            NotificationPermissionState.NOT_REQUIRED
-                        )
+                        viewModel.onNotificationPermissionResult(true)
                     }
-                }
-
-                SettingsEvent.OpenNotificationSettings -> {
-                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                    }
-                    context.startActivity(intent)
                 }
             }
         }
     }
+
+//    LaunchedEffect(Unit) {
+//        viewModel.updateNotificationPermissionState(
+//            resolveNotificationPermissionState(activity)
+//        )
+//    }
+
+//    LaunchedEffect(Unit) {
+//        viewModel.events.collect { event: SettingsEvent ->
+//            when (event) {
+//                SettingsEvent.RequestNotificationPermission -> {
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+//                    } else {
+//                        viewModel.updateNotificationPermissionState(
+//                            NotificationPermissionState.NOT_REQUIRED
+//                        )
+//                    }
+//                }
+//
+//                SettingsEvent.OpenNotificationSettings -> {
+//                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+//                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+//                    }
+//                    context.startActivity(intent)
+//                }
+//            }
+//        }
+//    }
 
     SettingsScreenContent(
         uiState = uiState,
@@ -605,7 +615,7 @@ private fun SettingsScreenContent(
                         icon = Icons.Rounded.Notifications,
                         label = "Notifications",
                         subtitle = "Allow app reminders and alerts",
-                        checked = uiState.notificationPermissionState == NotificationPermissionState.GRANTED,
+                        checked = uiState.notificationsEnabled,
                         onCheckedChange = onNotificationsToggle
                     )
 
