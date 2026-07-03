@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -18,6 +19,8 @@ object ReminderScheduler {
     fun schedule(context: Context, timeString: String) {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
         val triggerAt = nextTriggerMillis(timeString)
+
+        Log.d("ReminderDebug", "schedule time=$timeString triggerAt=$triggerAt exact=${alarmManager.canScheduleExactAlarms()}")
 
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra(EXTRA_TIME, timeString)

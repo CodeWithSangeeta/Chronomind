@@ -29,6 +29,9 @@ class SettingsDataStore @Inject constructor(
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val DAILY_REMINDER_ENABLED = booleanPreferencesKey("daily_reminder_enabled")
         val REMINDER_TIME = stringPreferencesKey("reminder_time")
+        val DEFAULT_COMPLETION_STYLE = stringPreferencesKey("default_completion_style")
+        val DEFAULT_STREAK_ON_MISS = stringPreferencesKey("default_streak_on_miss")
+
     }
 
     val notificationsEnabled: Flow<Boolean> =
@@ -45,20 +48,49 @@ class SettingsDataStore @Inject constructor(
             .catch { emit(emptyPreferences()) }
             .map { prefs -> prefs[Keys.DAILY_REMINDER_ENABLED] ?: false }
 
+    suspend fun setDailyReminderEnabled(value: Boolean) {
+        store.edit { prefs -> prefs[Keys.DAILY_REMINDER_ENABLED] = value }
+    }
     val reminderTime: Flow<String> =
         store.data
             .catch { emit(emptyPreferences()) }
             .map { prefs -> prefs[Keys.REMINDER_TIME] ?: "07:00 AM" }
 
-    suspend fun setDailyReminderEnabled(value: Boolean) {
-        store.edit { prefs ->
-            prefs[Keys.DAILY_REMINDER_ENABLED] = value
-        }
-    }
+
 
     suspend fun setReminderTime(value: String) {
         store.edit { prefs ->
             prefs[Keys.REMINDER_TIME] = value
+        }
+    }
+
+    val defaultCompletionStyle: Flow<String> = store.data
+        .catch { emit(emptyPreferences()) }
+        .map { prefs -> prefs[Keys.DEFAULT_COMPLETION_STYLE] ?: "MANUAL" }
+
+    suspend fun setDefaultCompletionStyle(value: String) {
+        store.edit { prefs -> prefs[Keys.DEFAULT_COMPLETION_STYLE] = value }
+    }
+
+    val defaultStreakOnMiss: Flow<String> = store.data
+        .catch { emit(emptyPreferences()) }
+        .map { prefs -> prefs[Keys.DEFAULT_STREAK_ON_MISS] ?: "CONTINUE" }
+
+    suspend fun setDefaultStreakOnMiss(value: String) {
+        store.edit { prefs -> prefs[Keys.DEFAULT_STREAK_ON_MISS] = value }
+    }
+
+    suspend fun seedDefaultsIfMissing(
+        completionStyle: String,
+        streakOnMiss: String
+    ) {
+        store.edit { prefs ->
+            if (prefs[Keys.DEFAULT_COMPLETION_STYLE] == null) {
+                prefs[Keys.DEFAULT_COMPLETION_STYLE] = completionStyle
+            }
+            if (prefs[Keys.DEFAULT_STREAK_ON_MISS] == null) {
+                prefs[Keys.DEFAULT_STREAK_ON_MISS] = streakOnMiss
+            }
         }
     }
 

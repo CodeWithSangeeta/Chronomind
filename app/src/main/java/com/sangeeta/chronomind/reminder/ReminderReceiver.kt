@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -15,6 +16,7 @@ import com.sangeeta.chronomind.R
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        Log.d("ReminderDebug", "ReminderReceiver fired")
         val timeString = intent.getStringExtra(ReminderScheduler.EXTRA_TIME) ?: "07:00 AM"
 
         val openIntent = PendingIntent.getActivity(

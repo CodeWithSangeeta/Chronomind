@@ -102,10 +102,18 @@ class TimerForegroundService : Service() {
 
                 val isTimer = running.targetType != "STOPWATCH"
                 val remaining = activityRepo.computeRemainingSeconds(running, now)
-                val shouldAutoFinish = isTimer && remaining <= 0L
+                val isTimerEnded = isTimer && remaining <= 0L
 
-                if (shouldAutoFinish) {
-                    activityRepo.completeSession(running, finalElapsed = elapsed)
+                if (isTimerEnded) {
+                    if (running.completionStyle == "TIMER_END") {
+                        activityRepo.completeSession(
+                            running,
+                            finalElapsed = running.targetMinutes * 60L
+                        )
+                    } else {
+                        activityRepo.pauseSession(running)
+                    }
+
                     stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                     break

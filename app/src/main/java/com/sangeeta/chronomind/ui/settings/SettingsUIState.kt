@@ -27,8 +27,10 @@ data class SettingsUiState(
     val reminderHour: Int = 7,
     val reminderMinute: Int = 0,
     val reminderAmPm: String = "AM",
-    val checkInStyle: String = "MANUAL",
-    val streakOnMiss: String = "CONTINUE",
+
+    val defaultCompletionStyle: String = "MANUAL",
+    val defaultStreakOnMiss: String = "CONTINUE",
+
     val widgetItems: List<SettingsRowUiModel> = emptyList(),
     val helpItems: List<SettingsRowUiModel> = emptyList(),
     val trustItems: List<SettingsRowUiModel> = emptyList(),

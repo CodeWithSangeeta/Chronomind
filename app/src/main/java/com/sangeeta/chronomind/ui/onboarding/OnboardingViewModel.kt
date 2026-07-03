@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.inject.Inject
 
 
@@ -87,7 +88,9 @@ class OnboardingViewModel @Inject constructor(
    fun finishOnboarding() {
         viewModelScope.launch {
             val current = _state.value
-            onboardingRepo.saveOnboardingResult(
+            
+            // Fixed: use completeOnboarding as defined in OnboardingRepository
+            onboardingRepo.completeOnboarding(
                 name           = "",
                 accountability = current.selectedAccountabilityTypes
                     .map { it.name }
@@ -96,7 +99,8 @@ class OnboardingViewModel @Inject constructor(
                 streakMiss     = current.selectedStreakMissChoice?.name ?: ""
             )
 
-            val today    = LocalDate.now().toString()
+            // API 24 compatible date formatting
+            val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
             val continueStreak = current.selectedStreakMissChoice == StreakMissChoice.CONTINUE
 
             val activities = current.selectedFocusAreas
@@ -110,7 +114,9 @@ class OnboardingViewModel @Inject constructor(
                         lastActiveDate = today,
                         continueStreakOnMiss = continueStreak,
                         orderIndex = index,
-                        icon = area.icon,
+                        icon = area.icon, // Matches ImageVector type
+                        targetType = "TIMER",
+                        completionStyle = if (current.selectedCheckInStyle == CheckInStyle.AUTO_CHECK) "TIMER_END" else "MANUAL"
                     )
                 }
 

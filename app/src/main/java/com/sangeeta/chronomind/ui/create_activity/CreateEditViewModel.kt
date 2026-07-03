@@ -1,6 +1,5 @@
 package com.sangeeta.chronomind.ui.create_activity
 
-
 import android.content.Context
 import android.os.Build
 import androidx.lifecycle.SavedStateHandle
@@ -8,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 import com.sangeeta.chronomind.repository.ActivityRepository
+import com.sangeeta.chronomind.repository.SettingsRepository
 import com.sangeeta.chronomind.service.TimerForegroundService
 import com.sangeeta.chronomind.ui.model.ActivityColorOption
 import com.sangeeta.chronomind.ui.model.ActivityIconOption
@@ -18,6 +18,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -30,26 +31,44 @@ sealed interface CreateEditActivityEvent {
 @HiltViewModel
 class CreateEditViewModel @Inject constructor(
     private val activityRepository: ActivityRepository,
+    private val settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val activityId: Int = savedStateHandle.get<Int>("activityId") ?: -1
+    private val activityId: Int = savedStateHandle["activityId"] ?: -1
     private val isEditMode: Boolean = activityId != -1
 
     private val _uiState = MutableStateFlow(
         CreateEditUiState(
-            mode = if (isEditMode) CreateEditMode.EDIT else CreateEditMode.CREATE
+            mode = if (isEditMode) CreateEditMode.EDIT else CreateEditMode.CREATE,
+            isLoading = true
         )
     )
     val uiState: StateFlow<CreateEditUiState> = _uiState.asStateFlow()
 
-    private val _events = Channel<CreateEditActivityEvent>(Channel.BUFFERED)
-    val events = _events.receiveAsFlow()
+    private val eventsChannel = Channel<CreateEditActivityEvent>(Channel.BUFFERED)
+    val events = eventsChannel.receiveAsFlow()
 
     init {
         if (isEditMode) {
             loadActivity()
+        } else {
+            loadDefaultsForNewActivity()
+        }
+    }
+
+    private fun loadDefaultsForNewActivity() {
+        viewModelScope.launch {
+            // repository already returns the mapped Enums
+            val completion = settingsRepository.defaultCompletionStyle.first()
+            val streak = settingsRepository.defaultStreakBehavior.first()
+
+            _uiState.value = _uiState.value.copy(
+                completionStyle = completion,
+                streakBehavior = streak,
+                isLoading = false
+            )
         }
     }
 
@@ -65,8 +84,12 @@ class CreateEditViewModel @Inject constructor(
                 targetType = if (entity.targetType == "STOPWATCH") TargetType.STOPWATCH else TargetType.TIMER,
                 targetHours = entity.targetMinutes / 60,
                 targetMinutes = entity.targetMinutes % 60,
-                streakBehavior = if (entity.continueStreakOnMiss) StreakBehavior.CONTINUE_STREAK else StreakBehavior.RESET_TO_ZERO,
-                completionStyle = if (entity.completionStyle == "TIMEREND") {
+                streakBehavior = if (entity.continueStreakOnMiss) {
+                    StreakBehavior.CONTINUE_STREAK
+                } else {
+                    StreakBehavior.RESET_TO_ZERO
+                },
+                completionStyle = if (entity.completionStyle == "TIMER_END") {
                     CompletionStyle.AUTO_CHECK
                 } else {
                     CompletionStyle.MANUAL_CHECK
@@ -152,7 +175,11 @@ class CreateEditViewModel @Inject constructor(
                 icon = current.selectedIcon.icon,
                 colorHex = current.selectedColor.hex,
                 targetType = if (current.targetType == TargetType.TIMER) "TIMER" else "STOPWATCH",
-                completionStyle = if (current.completionStyle == CompletionStyle.AUTO_CHECK) "TIMEREND" else "MANUAL",
+                completionStyle = if (current.completionStyle == CompletionStyle.AUTO_CHECK) {
+                    "TIMER_END"
+                } else {
+                    "MANUAL"
+                },
                 hasPendingSession = if (isEditMode) current.existingHasPendingSession else false,
                 pendingSessionDate = if (isEditMode) current.existingPendingSessionDate else "",
                 sessionStartedAtEpochMillis = if (isEditMode) current.existingSessionStartedAtEpochMillis else null,
@@ -168,18 +195,16 @@ class CreateEditViewModel @Inject constructor(
             if (isEditMode) {
                 activityRepository.update(entity)
                 _uiState.value = _uiState.value.copy(isSaving = false)
-                _events.send(CreateEditActivityEvent.NavigateBack)
+                eventsChannel.send(CreateEditActivityEvent.NavigateBack)
             } else {
                 val insertedId = activityRepository.add(entity).toInt()
                 val saved = activityRepository.observeById(insertedId).firstOrNull()
-
                 if (saved != null) {
                     activityRepository.resumeOrStart(saved)
                     startTimerService()
                 }
-
                 _uiState.value = _uiState.value.copy(isSaving = false)
-                _events.send(CreateEditActivityEvent.NavigateHomeAfterStart)
+                eventsChannel.send(CreateEditActivityEvent.NavigateHomeAfterStart)
             }
         }
     }
@@ -190,7 +215,7 @@ class CreateEditViewModel @Inject constructor(
             val entity = activityRepository.observeById(id).firstOrNull() ?: return@launch
             activityRepository.delete(entity)
             onDeleted()
-            _events.send(CreateEditActivityEvent.NavigateBack)
+            eventsChannel.send(CreateEditActivityEvent.NavigateBack)
         }
     }
 
