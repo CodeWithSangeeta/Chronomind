@@ -13,10 +13,11 @@ import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.local.datastore.SettingsDataStore
+import com.sangeeta.chronomind.reminder.ReminderScheduler
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +26,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 
 //@HiltViewModel
 //class SettingsViewModel @Inject constructor(
@@ -207,7 +212,8 @@ import kotlinx.coroutines.launch
 class SettingsViewModel @Inject constructor(
     private val settingsDataStore: SettingsDataStore,
     private val onboardingRepository: OnboardingRepository,
-    private val activityRepo: ActivityRepository
+    private val activityRepo: ActivityRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val localUiState = MutableStateFlow(SettingsUiState())
@@ -307,6 +313,29 @@ class SettingsViewModel @Inject constructor(
         onboardingRepository.resetOnboarding()
         localUiState.update { it.copy(showResetConfirm = false) }
         onDone()
+    }
+
+    fun onDailyReminderToggle(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsDataStore.setDailyReminderEnabled(enabled)
+            val time = settingsDataStore.reminderTime.first()
+            if (enabled) {
+                ReminderScheduler.cancel(context)
+                ReminderScheduler.schedule(context, time)
+            } else {
+                ReminderScheduler.cancel(context)
+            }
+        }
+    }
+
+    fun onReminderTimeChange(time: String) {
+        viewModelScope.launch {
+            settingsDataStore.setReminderTime(time)
+            if (settingsDataStore.isDailyReminderEnabled.first()) {
+                ReminderScheduler.cancel(context)
+                ReminderScheduler.schedule(context, time)
+            }
+        }
     }
 
     private data class ReminderParts(

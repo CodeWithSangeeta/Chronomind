@@ -46,7 +46,7 @@ fun HistorySessionCard(
             modifier = Modifier
                 .size(52.dp)
                 .clip(CircleShape)
-                .background(iconBg)
+                .background(session.accentColor)
                 .border(
                     width = 1.dp,
                     color = session.accentColor.copy(alpha = 0.30f),
@@ -57,7 +57,7 @@ fun HistorySessionCard(
             Icon(
                 imageVector = session.icon,
                 contentDescription = null,
-                tint = session.accentColor,
+                tint = Color.White,
                 modifier = Modifier.size(28.dp),
             )
         }

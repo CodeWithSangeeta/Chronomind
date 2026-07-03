@@ -20,5 +20,18 @@ class ChronoMindApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         com.sangeeta.chronomind.worker.StreakResetWorker.schedule(this)
+        createReminderNotificationChannel()
+    }
+
+    private fun createReminderNotificationChannel() {
+        val manager = getSystemService(android.app.NotificationManager::class.java)
+        val channel = android.app.NotificationChannel(
+            "chronomind_reminder_channel",
+            "Daily reminders",
+            android.app.NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Daily focus reminders"
+        }
+        manager.createNotificationChannel(channel)
     }
 }

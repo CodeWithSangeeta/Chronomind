@@ -1,6 +1,5 @@
 package com.sangeeta.chronomind
 
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,7 +10,6 @@ import com.sangeeta.chronomind.ui.onboarding.OnboardingNavHost
 import com.sangeeta.chronomind.repository.OnboardingRepository
 import com.sangeeta.chronomind.ui.navigation.MainNavHost
 import dagger.hilt.android.AndroidEntryPoint
-import android.Manifest
 import androidx.activity.viewModels
 import javax.inject.Inject
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen

@@ -10,7 +10,7 @@ import com.sangeeta.chronomind.local.db.entity.SessionEntity
 
 @Database(
     entities = [ActivityEntity::class, SessionEntity::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

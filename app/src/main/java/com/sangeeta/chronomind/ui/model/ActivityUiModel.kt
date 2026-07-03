@@ -16,8 +16,6 @@ data class ActivityUiModel(
     val continueOnMiss: Boolean,
     val targetType: String,
     val completionStyle: String,
-    val reminderEnabled: Boolean,
-    val reminderTime: String,
     val sessionState: ActivitySessionState,
     val canStart: Boolean,
     val displayTime: String
@@ -26,7 +24,7 @@ data class ActivityUiModel(
         get() = targetType == "STOPWATCH"
 
     val isTimerEnd: Boolean
-        get() = completionStyle == "TIMEREND" || completionStyle == "TIMER_END"
+        get() = completionStyle == "TIMER_END"
 
     val remainingSeconds: Long
         get() = (targetSeconds - elapsedSeconds).coerceAtLeast(0L)
@@ -45,7 +43,7 @@ data class ActivityUiModel(
         get() = formatSeconds(remainingSeconds)
 
     val checkInStyleLabel: String
-        get() = if (completionStyle == "TIMEREND") "Auto check-in" else "Manual check-in"
+        get() = if (completionStyle == "TIMER_END") "Auto check-in" else "Manual check-in"
 
     private fun formatSeconds(totalSeconds: Long): String {
         val h = totalSeconds / 3600

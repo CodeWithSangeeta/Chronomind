@@ -1,6 +1,5 @@
 package com.sangeeta.chronomind.ui.history
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sangeeta.chronomind.local.db.entity.SessionEntity
