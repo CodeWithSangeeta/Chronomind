@@ -105,7 +105,7 @@ class TimerForegroundService : Service() {
                 val isTimerEnded = isTimer && remaining <= 0L
 
                 if (isTimerEnded) {
-                    if (running.completionStyle == "TIMER_END") {
+                    if (running.completionStyle == "AUTO_CHECK") {
                         activityRepo.completeSession(
                             running,
                             finalElapsed = running.targetMinutes * 60L

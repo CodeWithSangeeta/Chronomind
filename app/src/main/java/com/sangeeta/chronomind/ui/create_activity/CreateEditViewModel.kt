@@ -89,10 +89,9 @@ class CreateEditViewModel @Inject constructor(
                 } else {
                     StreakBehavior.RESET_TO_ZERO
                 },
-                completionStyle = if (entity.completionStyle == "TIMER_END") {
-                    CompletionStyle.AUTO_CHECK
-                } else {
-                    CompletionStyle.MANUAL_CHECK
+                completionStyle = when (entity.completionStyle) {
+                    "AUTO_CHECK", "TIMER_END", "AUTO" -> CompletionStyle.AUTO_CHECK
+                    else -> CompletionStyle.MANUAL_CHECK
                 },
                 existingElapsedSeconds = entity.elapsedSeconds,
                 existingStreakDays = entity.streakDays,
@@ -175,11 +174,12 @@ class CreateEditViewModel @Inject constructor(
                 icon = current.selectedIcon.icon,
                 colorHex = current.selectedColor.hex,
                 targetType = if (current.targetType == TargetType.TIMER) "TIMER" else "STOPWATCH",
-                completionStyle = if (current.completionStyle == CompletionStyle.AUTO_CHECK) {
-                    "TIMER_END"
-                } else {
-                    "MANUAL"
-                },
+                completionStyle = current.completionStyle.name,
+//                completionStyle = if (current.completionStyle == CompletionStyle.AUTO_CHECK) {
+//                    "TIMER_END"
+//                } else {
+//                    "MANUAL"
+//                },
                 hasPendingSession = if (isEditMode) current.existingHasPendingSession else false,
                 pendingSessionDate = if (isEditMode) current.existingPendingSessionDate else "",
                 sessionStartedAtEpochMillis = if (isEditMode) current.existingSessionStartedAtEpochMillis else null,

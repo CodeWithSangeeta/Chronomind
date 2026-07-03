@@ -54,8 +54,8 @@ class SettingsViewModel @Inject constructor(
             reminderHour = parsed.hour,
             reminderMinute = parsed.minute,
             reminderAmPm = parsed.amPm,
-            defaultCompletionStyle = completionStyle.name,
-            defaultStreakOnMiss = streakBehavior.name,
+            defaultCompletionStyle = completionStyle,
+            defaultStreakOnMiss = streakBehavior,
             widgetItems = defaultWidgetItems(),
             helpItems = defaultHelpItems(),
             trustItems = defaultTrustItems(),
@@ -113,17 +113,15 @@ class SettingsViewModel @Inject constructor(
         saveReminderTime(current.reminderHour, current.reminderMinute, amPm)
     }
 
-    fun setDefaultCompletionStyle(value: String) {
+    fun setDefaultCompletionStyle(value: CompletionStyle) {
         viewModelScope.launch {
-            val style = try { CompletionStyle.valueOf(value) } catch (e: Exception) { CompletionStyle.MANUAL_CHECK }
-            settingsRepository.setDefaultCompletionStyle(style)
+            settingsRepository.setDefaultCompletionStyle(value)
         }
     }
 
-    fun setDefaultStreakOnMiss(value: String) {
+    fun setDefaultStreakOnMiss(value: StreakBehavior) {
         viewModelScope.launch {
-            val behavior = try { StreakBehavior.valueOf(value) } catch (e: Exception) { StreakBehavior.CONTINUE_STREAK }
-            settingsRepository.setDefaultStreakBehavior(behavior)
+            settingsRepository.setDefaultStreakBehavior(value)
         }
     }
 

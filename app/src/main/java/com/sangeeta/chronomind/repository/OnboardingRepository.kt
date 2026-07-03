@@ -3,10 +3,9 @@ package com.sangeeta.chronomind.repository
 import com.sangeeta.chronomind.local.datastore.OnboardingDataStore
 import com.sangeeta.chronomind.ui.create_activity.CompletionStyle
 import com.sangeeta.chronomind.ui.create_activity.StreakBehavior
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
-
 
 @Singleton
 class OnboardingRepository @Inject constructor(
@@ -32,19 +31,49 @@ class OnboardingRepository @Inject constructor(
             streakMiss = streakMiss
         )
 
+        syncSettingsFromOnboarding(checkIn, streakMiss)
+    }
+
+    suspend fun resetOnboarding() = onboardingDataStore.resetOnboarding()
+
+    suspend fun setCheckInStyle(value: String) {
+        onboardingDataStore.setCheckInStyle(value)
+        syncSettingsFromOnboarding(value, onboardingDataStore.streakOnMiss.first())
+    }
+
+    suspend fun setStreakOnMiss(value: String) {
+        onboardingDataStore.setStreakOnMiss(value)
+        syncSettingsFromOnboarding(onboardingDataStore.checkInStyle.first(), value)
+    }
+
+    private suspend fun syncSettingsFromOnboarding(checkIn: String, streakMiss: String) {
+        settingsRepository.setDefaultCompletionStyle(
+            if (checkIn == "AUTO" || checkIn == "TIMER_END") {
+                CompletionStyle.AUTO_CHECK
+            } else {
+                CompletionStyle.MANUAL_CHECK
+            }
+        )
+
+        settingsRepository.setDefaultStreakBehavior(
+            if (streakMiss == "RESET" || streakMiss == "RESET_TO_ZERO") {
+                StreakBehavior.RESET_TO_ZERO
+            } else {
+                StreakBehavior.CONTINUE_STREAK
+            }
+        )
+
         settingsRepository.seedDefaultsIfMissing(
-            completionStyle = when (checkIn) {
-                "AUTO", "TIMER_END" -> CompletionStyle.AUTO_CHECK
+            completionStyle = when (checkIn.uppercase()) {
+                "AUTO_CHECK", "TIMER_END", "TIMEREND", "AUTO" -> CompletionStyle.AUTO_CHECK
                 else -> CompletionStyle.MANUAL_CHECK
             },
-            streakBehavior = when (streakMiss) {
-                "RESET", "RESET_TO_ZERO" -> StreakBehavior.RESET_TO_ZERO
+            streakBehavior = when (streakMiss.uppercase()) {
+                "RESET_TO_ZERO", "RESETTOZERO", "RESET" -> StreakBehavior.RESET_TO_ZERO
                 else -> StreakBehavior.CONTINUE_STREAK
             }
         )
     }
 
-    suspend fun resetOnboarding() = onboardingDataStore.resetOnboarding()
-    suspend fun setCheckInStyle(value: String) = onboardingDataStore.setCheckInStyle(value)
-    suspend fun setStreakOnMiss(value: String) = onboardingDataStore.setStreakOnMiss(value)
+
 }

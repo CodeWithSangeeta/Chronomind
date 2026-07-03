@@ -66,7 +66,7 @@ class SettingsDataStore @Inject constructor(
 
     val defaultCompletionStyle: Flow<String> = store.data
         .catch { emit(emptyPreferences()) }
-        .map { prefs -> prefs[Keys.DEFAULT_COMPLETION_STYLE] ?: "MANUAL" }
+        .map { prefs -> prefs[Keys.DEFAULT_COMPLETION_STYLE] ?: "MANUAL_CHECK" }
 
     suspend fun setDefaultCompletionStyle(value: String) {
         store.edit { prefs -> prefs[Keys.DEFAULT_COMPLETION_STYLE] = value }
@@ -74,11 +74,12 @@ class SettingsDataStore @Inject constructor(
 
     val defaultStreakOnMiss: Flow<String> = store.data
         .catch { emit(emptyPreferences()) }
-        .map { prefs -> prefs[Keys.DEFAULT_STREAK_ON_MISS] ?: "CONTINUE" }
+        .map { prefs -> prefs[Keys.DEFAULT_STREAK_ON_MISS] ?: "CONTINUE_STREAK" }
 
     suspend fun setDefaultStreakOnMiss(value: String) {
         store.edit { prefs -> prefs[Keys.DEFAULT_STREAK_ON_MISS] = value }
     }
+
 
     suspend fun seedDefaultsIfMissing(
         completionStyle: String,

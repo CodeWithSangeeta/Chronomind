@@ -3,6 +3,8 @@ package com.sangeeta.chronomind.ui.settings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.sangeeta.chronomind.ui.create_activity.CompletionStyle
+import com.sangeeta.chronomind.ui.create_activity.StreakBehavior
 
 enum class NotificationPermissionState {
     GRANTED,
@@ -28,8 +30,8 @@ data class SettingsUiState(
     val reminderMinute: Int = 0,
     val reminderAmPm: String = "AM",
 
-    val defaultCompletionStyle: String = "MANUAL",
-    val defaultStreakOnMiss: String = "CONTINUE",
+    val defaultCompletionStyle: CompletionStyle = CompletionStyle.MANUAL_CHECK,
+    val defaultStreakOnMiss: StreakBehavior = StreakBehavior.CONTINUE_STREAK,
 
     val widgetItems: List<SettingsRowUiModel> = emptyList(),
     val helpItems: List<SettingsRowUiModel> = emptyList(),
@@ -38,3 +40,4 @@ data class SettingsUiState(
     val showClearDataConfirm: Boolean = false,
     val showResetConfirm: Boolean = false
 )
+

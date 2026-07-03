@@ -37,11 +37,11 @@ class OnboardingDataStore @Inject constructor(
 
     val checkInStyle: Flow<String> = store.data
         .catch { emit(emptyPreferences()) }
-        .map { it[keyCheckInStyle] ?: "MANUAL" }
+        .map { it[keyCheckInStyle] ?: "MANUAL_CHECK" }
 
     val streakOnMiss: Flow<String> = store.data
         .catch { emit(emptyPreferences()) }
-        .map { it[keyStreakOnMiss] ?: "CONTINUE" }
+        .map { it[keyStreakOnMiss] ?: "CONTINUE_STREAK" }
 
     val userName: Flow<String> = store.data
         .catch { emit(emptyPreferences()) }

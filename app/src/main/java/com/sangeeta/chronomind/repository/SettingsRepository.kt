@@ -20,17 +20,18 @@ class SettingsRepository @Inject constructor(
 
     val defaultCompletionStyle: Flow<CompletionStyle> =
         settingsDataStore.defaultCompletionStyle.map { stored ->
-            when (stored) {
-                "TIMER_END" -> CompletionStyle.AUTO_CHECK
-                "AUTO" -> CompletionStyle.AUTO_CHECK
+            when (stored.uppercase()) {
+                "AUTO_CHECK", "TIMER_END", "TIMEREND", "AUTO" -> CompletionStyle.AUTO_CHECK
+                "MANUAL_CHECK", "MANUAL" -> CompletionStyle.MANUAL_CHECK
                 else -> CompletionStyle.MANUAL_CHECK
             }
         }
 
     val defaultStreakBehavior: Flow<StreakBehavior> =
         settingsDataStore.defaultStreakOnMiss.map { stored ->
-            when (stored) {
-                "RESET", "RESET_TO_ZERO" -> StreakBehavior.RESET_TO_ZERO
+            when (stored.uppercase()) {
+                "RESET_TO_ZERO", "RESETTOZERO", "RESET" -> StreakBehavior.RESET_TO_ZERO
+                "CONTINUE_STREAK", "CONTINUESTREAK", "CONTINUE" -> StreakBehavior.CONTINUE_STREAK
                 else -> StreakBehavior.CONTINUE_STREAK
             }
         }
@@ -48,36 +49,22 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setDefaultCompletionStyle(value: CompletionStyle) {
-        settingsDataStore.setDefaultCompletionStyle(
-            when (value) {
-                CompletionStyle.MANUAL_CHECK -> "MANUAL"
-                CompletionStyle.AUTO_CHECK -> "TIMER_END"
-            }
-        )
+        settingsDataStore.setDefaultCompletionStyle(value.name)
     }
 
     suspend fun setDefaultStreakBehavior(value: StreakBehavior) {
-        settingsDataStore.setDefaultStreakOnMiss(
-            when (value) {
-                StreakBehavior.CONTINUE_STREAK -> "CONTINUE"
-                StreakBehavior.RESET_TO_ZERO -> "RESET"
-            }
-        )
+        settingsDataStore.setDefaultStreakOnMiss(value.name)
     }
+
 
     suspend fun seedDefaultsIfMissing(
         completionStyle: CompletionStyle,
         streakBehavior: StreakBehavior
     ) {
         settingsDataStore.seedDefaultsIfMissing(
-            completionStyle = when (completionStyle) {
-                CompletionStyle.MANUAL_CHECK -> "MANUAL"
-                CompletionStyle.AUTO_CHECK -> "TIMER_END"
-            },
-            streakOnMiss = when (streakBehavior) {
-                StreakBehavior.CONTINUE_STREAK -> "CONTINUE"
-                StreakBehavior.RESET_TO_ZERO -> "RESET"
-            }
+            completionStyle = completionStyle.name,
+            streakOnMiss = streakBehavior.name
         )
     }
+
 }

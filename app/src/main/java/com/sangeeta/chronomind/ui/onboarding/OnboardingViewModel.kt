@@ -89,7 +89,7 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             val current = _state.value
             
-            // Fixed: use completeOnboarding as defined in OnboardingRepository
+            // Corrected method name from saveOnboardingResult to completeOnboarding
             onboardingRepo.completeOnboarding(
                 name           = "",
                 accountability = current.selectedAccountabilityTypes
@@ -114,7 +114,7 @@ class OnboardingViewModel @Inject constructor(
                         lastActiveDate = today,
                         continueStreakOnMiss = continueStreak,
                         orderIndex = index,
-                        icon = area.icon, // Matches ImageVector type
+                        icon = area.icon,
                         targetType = "TIMER",
                         completionStyle = if (current.selectedCheckInStyle == CheckInStyle.AUTO_CHECK) "TIMER_END" else "MANUAL"
                     )

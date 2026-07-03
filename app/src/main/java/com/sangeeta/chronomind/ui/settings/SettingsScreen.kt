@@ -64,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sangeeta.chronomind.ui.create_activity.CompletionStyle
+import com.sangeeta.chronomind.ui.create_activity.StreakBehavior
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 
@@ -76,8 +78,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val context = LocalContext.current
-    val activity = context as? Activity
+
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -130,8 +131,8 @@ private fun SettingsScreenContent(
     onReminderHourChange: (Int) -> Unit,
     onReminderMinuteChange: (Int) -> Unit,
     onReminderAmPmChange: (String) -> Unit,
-    onDefaultCompletionStyleSelected: (String) -> Unit,
-    onDefaultStreakOnMissSelected: (String) -> Unit,
+    onDefaultCompletionStyleSelected: (CompletionStyle) -> Unit,
+    onDefaultStreakOnMissSelected: (StreakBehavior) -> Unit,
     onShowClearDataConfirm: (Boolean) -> Unit,
     onShowResetConfirm: (Boolean) -> Unit,
     onConfirmClearData: () -> Unit,
@@ -180,8 +181,8 @@ private fun SettingsScreenContent(
                         onMinuteChange = onReminderMinuteChange,
                         onAmPmChange = onReminderAmPmChange
                     )
-                     }
-                    }
+                }
+            }
 
             item {
                 SettingsSectionCard(
@@ -193,30 +194,30 @@ private fun SettingsScreenContent(
                         label = "Missed streak",
                         subtitle = "Default rule for new activities",
                         selected = uiState.defaultStreakOnMiss,
-                        options = listOf("CONTINUE", "RESET"),
-                        displayMap = mapOf(
-                            "CONTINUE" to "Continue streak",
-                            "RESET" to "Reset to zero"
+                        options = listOf(
+                            StreakBehavior.CONTINUE_STREAK,
+                            StreakBehavior.RESET_TO_ZERO
                         ),
+                        labelFor = { it.label },
                         onSelected = onDefaultStreakOnMissSelected
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
-
                     SettingsDropdownRow(
                         icon = Icons.Rounded.TrackChanges,
                         label = "Completion check",
                         subtitle = "Default way to mark complete",
                         selected = uiState.defaultCompletionStyle,
-                        options = listOf("MANUAL", "TIMER_END"),
-                        displayMap = mapOf(
-                            "MANUAL" to "Manual check-in",
-                            "TIMER_END" to "Auto check-in"
+                        options = listOf(
+                            CompletionStyle.MANUAL_CHECK,
+                            CompletionStyle.AUTO_CHECK
                         ),
+                        labelFor = { it.label },
                         onSelected = onDefaultCompletionStyleSelected
                     )
                 }
             }
+
 
             item {
                 SettingsSectionCard(title = "WIDGETS") {
@@ -507,15 +508,104 @@ private fun SettingsToggleRow(
     }
 }
 
+//@Composable
+//private fun SettingsDropdownRow(
+//    icon: ImageVector,
+//    label: String,
+//    subtitle: String,
+//    selected: String,
+//    options: List<String>,
+//    displayMap: Map<String, String> = emptyMap(),
+//    onSelected: (String) -> Unit
+//) {
+//    var expanded by remember { mutableStateOf(false) }
+//
+//    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+//        Row(
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.spacedBy(14.dp)
+//        ) {
+//            RowIcon(icon = icon)
+//
+//            Column(modifier = Modifier.weight(1f)) {
+//                Text(
+//                    text = label,
+//                    style = AuraTypography.TitleMedium,
+//                    color = AuraColors.TextPrimary
+//                )
+//                Text(
+//                    text = subtitle,
+//                    style = AuraTypography.BodyMedium,
+//                    color = AuraColors.TextSecondary
+//                )
+//            }
+//        }
+//
+//        Box {
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .clip(RoundedCornerShape(14.dp))
+//                    .background(AuraColors.BackgroundDark)
+//                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(14.dp))
+//                    .clickable { expanded = true }
+//                    .padding(horizontal = 16.dp, vertical = 14.dp),
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.SpaceBetween
+//            ) {
+//                Text(
+//                    text = displayMap[selected] ?: selected,
+//                    style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.Medium),
+//                    color = AuraColors.TextPrimary
+//                )
+//
+//                Icon(
+//                    imageVector = Icons.Rounded.ExpandMore,
+//                    contentDescription = null,
+//                    tint = AuraColors.TextSecondary
+//                )
+//            }
+//
+//            DropdownMenu(
+//                expanded = expanded,
+//                onDismissRequest = { expanded = false },
+//                containerColor = AuraColors.SurfaceCard
+//            ) {
+//                options.forEach { option ->
+//                    DropdownMenuItem(
+//                        text = {
+//                            Text(
+//                                text = displayMap[option] ?: option,
+//                                style = AuraTypography.BodyMedium,
+//                                color = if (option == selected) {
+//                                    AuraColors.YellowPrimary
+//                                } else {
+//                                    AuraColors.TextPrimary
+//                                }
+//                            )
+//                        },
+//                        onClick = {
+//                            expanded = false
+//                            onSelected(option)
+//                        }
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
+
+
+
 @Composable
-private fun SettingsDropdownRow(
+private fun <T> SettingsDropdownRow(
     icon: ImageVector,
     label: String,
     subtitle: String,
-    selected: String,
-    options: List<String>,
-    displayMap: Map<String, String> = emptyMap(),
-    onSelected: (String) -> Unit
+    selected: T,
+    options: List<T>,
+    labelFor: (T) -> String,
+    onSelected: (T) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -527,16 +617,8 @@ private fun SettingsDropdownRow(
             RowIcon(icon = icon)
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = AuraTypography.TitleMedium,
-                    color = AuraColors.TextPrimary
-                )
-                Text(
-                    text = subtitle,
-                    style = AuraTypography.BodyMedium,
-                    color = AuraColors.TextSecondary
-                )
+                Text(text = label, style = AuraTypography.TitleMedium, color = AuraColors.TextPrimary)
+                Text(text = subtitle, style = AuraTypography.BodyMedium, color = AuraColors.TextSecondary)
             }
         }
 
@@ -553,7 +635,7 @@ private fun SettingsDropdownRow(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = displayMap[selected] ?: selected,
+                    text = labelFor(selected),
                     style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.Medium),
                     color = AuraColors.TextPrimary
                 )
@@ -574,13 +656,9 @@ private fun SettingsDropdownRow(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = displayMap[option] ?: option,
+                                text = labelFor(option),
                                 style = AuraTypography.BodyMedium,
-                                color = if (option == selected) {
-                                    AuraColors.YellowPrimary
-                                } else {
-                                    AuraColors.TextPrimary
-                                }
+                                color = if (option == selected) AuraColors.YellowPrimary else AuraColors.TextPrimary
                             )
                         },
                         onClick = {
@@ -593,7 +671,6 @@ private fun SettingsDropdownRow(
         }
     }
 }
-
 
 
 @Composable
@@ -757,21 +834,21 @@ private fun RowIcon(icon: ImageVector) {
     }
 }
 
-private fun resolveNotificationPermissionState(activity: Activity?): NotificationPermissionState {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        return NotificationPermissionState.NOT_REQUIRED
-    }
-
-    val safeActivity = activity ?: return NotificationPermissionState.DENIED
-
-    return if (
-        ContextCompat.checkSelfPermission(
-            safeActivity,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-    ) {
-        NotificationPermissionState.GRANTED
-    } else {
-        NotificationPermissionState.DENIED
-    }
-}
+//private fun resolveNotificationPermissionState(activity: Activity?): NotificationPermissionState {
+//    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+//        return NotificationPermissionState.NOT_REQUIRED
+//    }
+//
+//    val safeActivity = activity ?: return NotificationPermissionState.DENIED
+//
+//    return if (
+//        ContextCompat.checkSelfPermission(
+//            safeActivity,
+//            Manifest.permission.POST_NOTIFICATIONS
+//        ) == PackageManager.PERMISSION_GRANTED
+//    ) {
+//        NotificationPermissionState.GRANTED
+//    } else {
+//        NotificationPermissionState.DENIED
+//    }
+//}
