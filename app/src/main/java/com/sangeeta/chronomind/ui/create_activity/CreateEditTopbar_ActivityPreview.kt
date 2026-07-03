@@ -14,7 +14,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,8 +24,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.sangeeta.chronomind.ui.components.ActivityMetaBadge
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 
@@ -82,72 +87,122 @@ fun CreateEditTopBar(
 
 @Composable
 fun ActivityPreviewCard(uiState: CreateEditUiState) {
-    val accentColor = uiState.selectedColor.color
-    val durationText = when {
-        uiState.targetType == TargetType.STOPWATCH -> "Stopwatch"
+    val accent = uiState.selectedColor.color
+
+    val titleText = if (uiState.activityName.isBlank()) { "Activity name" } else { uiState.activityName }
+
+    val timeText = when {
+        uiState.targetType == TargetType.STOPWATCH -> "00:00"
         uiState.targetHours > 0 && uiState.targetMinutes > 0 ->
             "${uiState.targetHours}h ${uiState.targetMinutes}m"
-        uiState.targetHours > 0 -> "${uiState.targetHours}h"
+        uiState.targetHours > 0 -> "${uiState.targetHours}h 00m"
         uiState.targetMinutes > 0 -> "${uiState.targetMinutes}m"
         else -> "Set target"
     }
 
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(
-                Brush.horizontalGradient(
+                Brush.verticalGradient(
                     colors = listOf(
-                        accentColor.copy(alpha = 0.12f),
+                        AuraColors.SurfaceCardLight,
                         AuraColors.SurfaceCard
                     )
                 )
             )
-            .border(1.dp, accentColor.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+            .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(24.dp))
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(accentColor.copy(alpha = 0.25f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Icon(
-                imageVector = uiState.selectedIcon.icon,
-                contentDescription = null,
-                // tint = if (isSelected) selectedColor else AuraColors.TextMuted,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = if (uiState.activityName.isBlank()) "Activity name" else uiState.activityName,
-                style = AuraTypography.TitleMedium,
-                color = if (uiState.activityName.isBlank()) AuraColors.TextMuted else AuraColors.TextPrimary,
-                maxLines = 1
-            )
-            Text(
-                text = durationText,
-                style = AuraTypography.BodyMedium,
-                color = accentColor
-            )
-        }
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .background(accentColor.copy(alpha = 0.15f))
-                .padding(horizontal = 10.dp, vertical = 4.dp)
-        ) {
-            Text(
-                text = uiState.targetType.label.uppercase(),
-                style = AuraTypography.LabelMedium,
-                color = accentColor,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(accent)
+                        .border(
+                            width = 1.dp,
+                            color = accent.copy(alpha = 0.50f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = uiState.selectedIcon.icon,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = titleText,
+                        style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (uiState.activityName.isBlank()) {
+                            AuraColors.TextMuted
+                        } else {
+                            AuraColors.TextPrimary
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Text(
+                        text = timeText,
+                        style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.Medium),
+                        color = AuraColors.TextPrimary,
+                        maxLines = 1
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ActivityMetaBadge(
+                            label = if (uiState.targetType == TargetType.STOPWATCH) {
+                                "Stopwatch"
+                            } else {
+                                "Timer"
+                            },
+                            textColor = accent,
+                            backgroundColor = accent.copy(alpha = 0.10f),
+                            borderColor = accent.copy(alpha = 0.18f),
+                            leadingIcon = Icons.Rounded.Bolt
+                        )
+                    }
+
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(AuraColors.SurfaceCardLight)
+                        .border(1.dp, AuraColors.CardBorderDefault, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = null,
+                        tint = AuraColors.YellowPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
         }
     }
 }

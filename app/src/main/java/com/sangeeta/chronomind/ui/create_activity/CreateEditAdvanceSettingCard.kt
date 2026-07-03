@@ -68,18 +68,13 @@ fun AdvancedSettingsSection(
                     tint = AuraColors.TextMuted,
                     modifier = Modifier.size(18.dp)
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+
                     Text(
-                        text = "ADVANCED SETTINGS",
+                        text = "Consistency Rules",
                         style = AuraTypography.LabelMedium,
                         color = AuraColors.TextMuted
                     )
-                    Text(
-                        text = "Customize how this activity behaves",
-                        style = AuraTypography.BodySmall,
-                        color = AuraColors.TextSecondary
-                    )
-                }
+
             }
 
             Icon(

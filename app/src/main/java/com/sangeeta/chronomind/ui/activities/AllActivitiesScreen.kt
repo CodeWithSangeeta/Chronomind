@@ -7,11 +7,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,7 +31,12 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sort
-import androidx.compose.material3.*
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,13 +49,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sangeeta.chronomind.ui.components.ActivityCard
+import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
 
@@ -80,16 +96,15 @@ fun AllActivitiesScreen(
         }
     }
 
-
-        AllActivitiesScreenContent(
+    AllActivitiesScreenContent(
         uiState = uiState,
         onBackClick = onBackClick,
         onSearchChange = viewModel::onSearchQueryChange,
         onSortSelected = viewModel::onSortSelected,
         onNewActivityClick = onNewActivityClick,
         onEditActivityClick = onEditActivityClick,
-        onDeleteActivityClick = viewModel::onDeleteActivity,
-        onStartActivityClick = viewModel::onPlayClick
+        onStartActivityClick = viewModel::onPlayClick,
+        onPauseActivityClick = viewModel::onPauseClick
     )
 }
 
@@ -101,70 +116,75 @@ private fun AllActivitiesScreenContent(
     onSortSelected: (ActivitySortOption) -> Unit,
     onNewActivityClick: () -> Unit,
     onEditActivityClick: (Int) -> Unit,
-    onDeleteActivityClick: (Int) -> Unit,
-    onStartActivityClick: (Int) -> Unit
+    onStartActivityClick: (Int) -> Unit,
+    onPauseActivityClick: (Int) -> Unit
 ) {
-    LazyColumn(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AuraColors.BackgroundDark)
             .statusBarsPadding()
-            .windowInsetsPadding(WindowInsets.navigationBars),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(horizontal = 20.dp, vertical = 14.dp)
     ) {
-        item {
-            AllActivitiesTopBar(onBackClick = onBackClick)
-        }
+        AllActivitiesTopBar(onBackClick = onBackClick)
 
-        item {
-            SearchAndSortRow(
-                query = uiState.searchQuery,
-                selectedSort = uiState.selectedSort,
-                onQueryChange = onSearchChange,
-                onSortSelected = onSortSelected
-            )
-        }
+        Spacer(modifier = Modifier.height(16.dp))
 
-        item {
-            NewActivityButton(onClick = onNewActivityClick)
-        }
+        SearchAndSortRow(
+            query = uiState.searchQuery,
+            selectedSort = uiState.selectedSort,
+            onQueryChange = onSearchChange,
+            onSortSelected = onSortSelected
+        )
 
-        item {
-            ActivitiesHeader(count = uiState.filteredActivities.size)
-        }
+        Spacer(modifier = Modifier.height(14.dp))
+
+        NewActivityButton(onClick = onNewActivityClick)
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        ActivitiesHeader(count = uiState.filteredActivities.size)
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         when {
             uiState.isEmpty -> {
-                item {
-                    ActivitiesEmptyState()
-                }
+                ActivitiesEmptyState()
             }
 
             uiState.isSearchEmpty -> {
-                item {
-                    SearchEmptyState()
-                }
+                SearchEmptyState()
             }
 
             else -> {
-                items(uiState.filteredActivities, key = { it.id }) { activity ->
-                    ActivityCard(
-                        activity = activity,
-                        isSelected = false,
-                        onCardClick = { onEditActivityClick(activity.id) },
-                        onActionClick = {
-                            if (activity.canStart) {
-                                onStartActivityClick(activity.id)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(uiState.filteredActivities, key = { it.id }) { activity ->
+                        ActivityCard(
+                            activity = activity,
+                            isSelected = false,
+                            onCardClick = { onEditActivityClick(activity.id) },
+
+                            onActionClick = {
+                                when (activity.sessionState) {
+                                    ActivitySessionState.RUNNING -> onPauseActivityClick(activity.id)
+                                    ActivitySessionState.PENDING,
+                                    ActivitySessionState.IDLE -> {
+                                        if (activity.canStart) {
+                                            onStartActivityClick(activity.id)
+                                        }
+                                    }
+                                    ActivitySessionState.COMPLETED_TODAY -> Unit
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -174,8 +194,10 @@ private fun AllActivitiesTopBar(
     onBackClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         CircularIconButton(
@@ -184,21 +206,12 @@ private fun AllActivitiesTopBar(
             onClick = onBackClick
         )
 
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "All Activities",
-                style = AuraTypography.DisplayMedium,
-                color = AuraColors.TextPrimary
-            )
-            Text(
-                text = "Your focus library • Edit, start or manage activities",
-                style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary
-            )
-        }
+        Text(
+            text = "All Activities",
+            style = AuraTypography.DisplayMedium,
+            color = AuraColors.TextPrimary,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -234,13 +247,14 @@ private fun SearchAndSortRow(
                     tint = AuraColors.TextMuted
                 )
             },
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = AuraColors.SurfaceCard,
-                unfocusedContainerColor = AuraColors.SurfaceCard,
-                disabledContainerColor = AuraColors.SurfaceCard,
+                focusedContainerColor = AuraColors.SurfaceCardLight,
+                unfocusedContainerColor = AuraColors.SurfaceCardLight,
+                disabledContainerColor = AuraColors.SurfaceCardLight,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
                 cursorColor = AuraColors.YellowPrimary,
                 focusedTextColor = AuraColors.TextPrimary,
                 unfocusedTextColor = AuraColors.TextPrimary
@@ -264,15 +278,22 @@ private fun SortButton(
     Box {
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(24.dp))
-                .background(AuraColors.SurfaceCard)
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            AuraColors.SurfaceCardLight,
+                            AuraColors.SurfaceCard
+                        )
+                    )
+                )
                 .border(
                     width = 1.dp,
                     color = AuraColors.CardBorderDefault,
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(20.dp)
                 )
                 .clickable { expanded = true }
-                .padding(horizontal = 18.dp, vertical = 18.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -284,7 +305,7 @@ private fun SortButton(
             Text(
                 text = "Sort",
                 style = AuraTypography.TitleMedium,
-                color = AuraColors.YellowPrimary
+                color = AuraColors.TextPrimary
             )
         }
 
@@ -322,32 +343,33 @@ private fun NewActivityButton(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(
-                Brush.horizontalGradient(
-                    colors = listOf(
-                        Color(0xFF131313),
-                        Color(0xFF171205)
+                Brush.verticalGradient(
+                    listOf(
+                        AuraColors.SurfaceCardLight,
+                        AuraColors.SurfaceCard
                     )
                 )
             )
             .border(
                 width = 1.dp,
-                color = AuraColors.YellowPrimary.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(26.dp)
+                color = AuraColors.CardBorderDefault,
+                shape = RoundedCornerShape(22.dp)
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(38.dp)
+                .size(34.dp)
                 .clip(CircleShape)
+                .background(AuraColors.YellowPrimary.copy(alpha = 0.10f))
                 .border(
                     width = 1.dp,
-                    color = AuraColors.YellowPrimary.copy(alpha = 0.5f),
+                    color = AuraColors.YellowPrimary.copy(alpha = 0.22f),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -359,12 +381,10 @@ private fun NewActivityButton(
             )
         }
 
-        Spacer(modifier = Modifier.width(14.dp))
-
         Text(
             text = "New Activity",
             style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = AuraColors.YellowPrimary
+            color = AuraColors.TextPrimary
         )
     }
 }
@@ -394,22 +414,32 @@ private fun ActivitiesHeader(
 @Composable
 private fun SearchEmptyState() {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("No activities match your search", color = AuraColors.TextPrimary)
+        Text(
+            text = "No activities match your search",
+            color = AuraColors.TextPrimary
+        )
     }
 }
 
 @Composable
 private fun ActivitiesEmptyState() {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("No activities in your library yet", color = AuraColors.TextPrimary)
+        Text(
+            text = "No activities in your library yet",
+            color = AuraColors.TextPrimary
+        )
     }
 }
 
@@ -429,6 +459,10 @@ private fun CircularIconButton(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Icon(icon, contentDescription, tint = iconTint)
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = iconTint
+        )
     }
 }

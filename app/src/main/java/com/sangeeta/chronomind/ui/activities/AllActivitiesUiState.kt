@@ -13,7 +13,7 @@ data class AllActivitiesUiState(
     val activities: List<ActivityUiModel> = emptyList(),
     val filteredActivities: List<ActivityUiModel> = emptyList(),
     val searchQuery: String = "",
-    val selectedSort: ActivitySortOption = ActivitySortOption.RECENTLY_USED,
+    val selectedSort: ActivitySortOption = ActivitySortOption.RECENTLY_ADDED,
     val isEmpty: Boolean = false,
     val isSearchEmpty: Boolean = false
 )

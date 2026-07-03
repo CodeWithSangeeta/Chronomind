@@ -65,8 +65,6 @@ class CreateEditViewModel @Inject constructor(
                 targetType = if (entity.targetType == "STOPWATCH") TargetType.STOPWATCH else TargetType.TIMER,
                 targetHours = entity.targetMinutes / 60,
                 targetMinutes = entity.targetMinutes % 60,
-                reminderEnabled = entity.reminderEnabled,
-                reminderTime = entity.reminderTime,
                 streakBehavior = if (entity.continueStreakOnMiss) StreakBehavior.CONTINUE_STREAK else StreakBehavior.RESET_TO_ZERO,
                 completionStyle = if (entity.completionStyle == "TIMEREND") {
                     CompletionStyle.AUTO_CHECK
@@ -112,14 +110,6 @@ class CreateEditViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(targetMinutes = value.coerceIn(0, 59))
     }
 
-    fun toggleReminder(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(reminderEnabled = enabled)
-    }
-
-    fun setReminderTime(time: String) {
-        _uiState.value = _uiState.value.copy(reminderTime = time)
-    }
-
     fun toggleAdvancedExpanded() {
         _uiState.value = _uiState.value.copy(
             isAdvancedExpanded = !_uiState.value.isAdvancedExpanded
@@ -163,8 +153,6 @@ class CreateEditViewModel @Inject constructor(
                 colorHex = current.selectedColor.hex,
                 targetType = if (current.targetType == TargetType.TIMER) "TIMER" else "STOPWATCH",
                 completionStyle = if (current.completionStyle == CompletionStyle.AUTO_CHECK) "TIMEREND" else "MANUAL",
-                reminderEnabled = current.reminderEnabled,
-                reminderTime = current.reminderTime,
                 hasPendingSession = if (isEditMode) current.existingHasPendingSession else false,
                 pendingSessionDate = if (isEditMode) current.existingPendingSessionDate else "",
                 sessionStartedAtEpochMillis = if (isEditMode) current.existingSessionStartedAtEpochMillis else null,

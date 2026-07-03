@@ -102,6 +102,15 @@ class AllActivitiesViewModel @Inject constructor(
         }
     }
 
+    fun onPauseClick(activityId: Int) {
+        viewModelScope.launch {
+            val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch
+            val uiModel = entity.toUiModel()
+            if (!uiModel.isRunning) return@launch
+            context.startService(TimerForegroundService.pauseIntent(context))
+        }
+    }
+
     fun continueStartAfterPermission(activityId: Int) {
         viewModelScope.launch {
             val entity = activityRepository.observeById(activityId).firstOrNull() ?: return@launch

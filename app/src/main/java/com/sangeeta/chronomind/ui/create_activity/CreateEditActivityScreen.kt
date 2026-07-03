@@ -54,8 +54,6 @@ fun CreateEditActivityScreen(
         onTargetTypeSelected = viewModel::selectTargetType,
         onHoursChange = viewModel::updateTargetHours,
         onMinutesChange = viewModel::updateTargetMinutes,
-        onReminderToggle = viewModel::toggleReminder,
-        onReminderTimeChange = viewModel::setReminderTime,
         onAdvancedToggle = viewModel::toggleAdvancedExpanded,
         onStreakBehaviorSelected = viewModel::selectStreakBehavior,
         onCompletionStyleSelected = viewModel::selectCompletionStyle,
@@ -74,8 +72,6 @@ private fun CreateEditActivityContent(
     onTargetTypeSelected: (TargetType) -> Unit,
     onHoursChange: (Int) -> Unit,
     onMinutesChange: (Int) -> Unit,
-    onReminderToggle: (Boolean) -> Unit,
-    onReminderTimeChange: (String) -> Unit,
     onAdvancedToggle: () -> Unit,
     onStreakBehaviorSelected: (StreakBehavior) -> Unit,
     onCompletionStyleSelected: (CompletionStyle) -> Unit,
@@ -108,7 +104,10 @@ private fun CreateEditActivityContent(
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
 
-            item { ActivityPreviewCard(uiState = uiState) }
+            item {
+                FormSectionCard(title = "Preview") {
+                    ActivityPreviewCard(uiState = uiState)
+                }}
 
             item {
                 FormSectionCard(title = "Basics") {
@@ -219,14 +218,21 @@ private fun CreateEditActivityContent(
             }
 
             item {
-                AdvancedSettingsSection(
-                    isExpanded = uiState.isAdvancedExpanded,
-                    selectedStreakBehavior = uiState.streakBehavior,
-                    selectedCompletionStyle = uiState.completionStyle,
-                    onToggle = onAdvancedToggle,
-                    onStreakBehaviorSelected = onStreakBehaviorSelected,
-                    onCompletionStyleSelected = onCompletionStyleSelected
-                )
+                FormSectionCard(title = "Advanced Settings") {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        AdvancedSettingsSection(
+                            isExpanded = uiState.isAdvancedExpanded,
+                            selectedStreakBehavior = uiState.streakBehavior,
+                            selectedCompletionStyle = uiState.completionStyle,
+                            onToggle = onAdvancedToggle,
+                            onStreakBehaviorSelected = onStreakBehaviorSelected,
+                            onCompletionStyleSelected = onCompletionStyleSelected
+                        )
+                    }
+                }
             }
 
             item {

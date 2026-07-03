@@ -7,14 +7,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
@@ -28,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.ui.theme.AuraColors
@@ -40,22 +45,13 @@ fun ActivityCard(
     onCardClick: () -> Unit,
     onActionClick: () -> Unit
 ) {
-    val borderColor = when (activity.sessionState) {
-        ActivitySessionState.RUNNING -> AuraColors.YellowPrimary
-        ActivitySessionState.PENDING -> AuraColors.YellowPrimary.copy(alpha = 0.55f)
-        ActivitySessionState.COMPLETED_TODAY -> Color(0xFF4CAF50).copy(alpha = 0.6f)
-        ActivitySessionState.IDLE -> if (isSelected) {
-            AuraColors.YellowPrimary.copy(alpha = 0.45f)
-        } else {
-            AuraColors.CardBorderDefault
-        }
-    }
+    val accent = rememberActivityAccent(activity.colorHex)
+    val completedGreen = Color(0xFF6FCF7B)
 
-    val statusText = when (activity.sessionState) {
-        ActivitySessionState.RUNNING -> "In session • ${activity.displayTime}"
-        ActivitySessionState.PENDING -> "Resume • ${activity.displayTime}"
-        ActivitySessionState.COMPLETED_TODAY -> "Completed today • ${activity.displayTime}"
-        ActivitySessionState.IDLE -> "${activity.targetSeconds / 60} min • ${activity.lastActiveDate}"
+    val borderColor = if (isSelected) {
+        AuraColors.CardBorderDefault.copy(alpha = 0.9f)
+    } else {
+        AuraColors.CardBorderDefault
     }
 
     val actionIcon = when (activity.sessionState) {
@@ -66,19 +62,24 @@ fun ActivityCard(
     }
 
     val actionTint = when (activity.sessionState) {
-        ActivitySessionState.COMPLETED_TODAY -> Color(0xFF66BB6A)
-        ActivitySessionState.PENDING -> Color(0xFFFFB74D)
+        ActivitySessionState.COMPLETED_TODAY -> completedGreen
         else -> AuraColors.YellowPrimary
     }
 
-    val actionDescription = when (activity.sessionState) {
-        ActivitySessionState.RUNNING -> "Pause ${activity.name}"
-        ActivitySessionState.PENDING -> "Resume ${activity.name}"
-        ActivitySessionState.COMPLETED_TODAY -> "${activity.name} completed today"
-        ActivitySessionState.IDLE -> "Start ${activity.name}"
-    }
 
     val actionEnabled = activity.sessionState != ActivitySessionState.COMPLETED_TODAY
+
+    val completionBadgeLabel = when (activity.sessionState) {
+        ActivitySessionState.COMPLETED_TODAY -> "Done today"
+        else -> null
+    }
+
+    val supportText = when (activity.sessionState) {
+        ActivitySessionState.RUNNING -> null
+        ActivitySessionState.PENDING -> "Last attempt: Today"
+        ActivitySessionState.COMPLETED_TODAY -> null
+        ActivitySessionState.IDLE -> "Last attempt: ${activity.lastActiveDate}"
+    }
 
     Box(
         modifier = Modifier
@@ -86,116 +87,238 @@ fun ActivityCard(
             .clip(RoundedCornerShape(24.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF141414), AuraColors.SurfaceCard)
+                    colors = listOf(
+                        AuraColors.SurfaceCardLight,
+                        AuraColors.SurfaceCard
+                    )
                 )
             )
             .border(1.dp, borderColor, RoundedCornerShape(24.dp))
             .clickable(onClick = onCardClick)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(Color.Transparent)
-                .widthIn(min = 0.dp)
-                .then(Modifier)
-                .paddingSafe(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(AuraColors.SurfaceCardLight),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Icon(
-                    imageVector = activity.icon,
-                    contentDescription = null,
-                    tint = actionTint,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = activity.name,
-                    style = AuraTypography.TitleMedium,
-                    color = AuraColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(accent)
+                        .border(
+                            width = 1.dp,
+                            color = accent.copy(alpha = 0.5f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = activity.icon,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
 
-                Text(
-                    text = statusText,
-                    style = AuraTypography.BodyMedium,
-                    color = AuraColors.TextSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = activity.name,
+                            modifier = Modifier.weight(1f),
+                            style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = AuraColors.TextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (activity.streakDays > 0) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.LocalFireDepartment,
+                                    contentDescription = "Streak",
+                                    tint = AuraColors.YellowPrimary.copy(alpha = 0.78f),
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Text(
+                                    text = activity.streakDays.toString(),
+                                    style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = AuraColors.TextSecondary
+                                )
+                            }
+                        }
+                    }
+
                     Text(
-                        text = "${(activity.progress * 100).toInt()}%",
-                        style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = actionTint
+                        text = activity.displayTime,
+                        style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.Medium),
+                        color = AuraColors.TextPrimary,
+                        maxLines = 1
                     )
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(5.dp)
-                            .clip(RoundedCornerShape(50.dp))
-                            .background(AuraColors.TimerTrack)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(activity.progress.coerceIn(0f, 1f))
-                                .height(5.dp)
-                                .clip(RoundedCornerShape(50.dp))
-                                .background(actionTint)
+                        ActivityMetaBadge(
+                            label = if (activity.isStopwatch) "Stopwatch" else "Timer",
+                            textColor = accent,
+                            backgroundColor = accent.copy(alpha = 0.10f),
+                            borderColor = accent.copy(alpha = 0.18f),
+                            leadingIcon = Icons.Rounded.Bolt
+                        )
+
+                        if (completionBadgeLabel != null) {
+                            ActivityMetaBadge(
+                                label = completionBadgeLabel,
+                                textColor = completedGreen,
+                                backgroundColor = completedGreen.copy(alpha = 0.10f),
+                                borderColor = completedGreen.copy(alpha = 0.18f)
+                            )
+                        }
+                    }
+
+                    if (supportText != null) {
+                        Text(
+                            text = supportText,
+                            style = AuraTypography.BodySmall,
+                            color = AuraColors.TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                if (activity.streakDays > 0) {
-                    Text(
-                        text = "Streak ${activity.streakDays} days",
-                        style = AuraTypography.BodySmall,
-                        color = AuraColors.TextMuted
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (actionEnabled) {
+                                AuraColors.SurfaceCardLight
+                            } else {
+                                AuraColors.SurfaceCardLight.copy(alpha = 0.7f)
+                            }
+                        )
+                        .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
+                        .clickable(
+                            enabled = actionEnabled,
+                            onClick = onActionClick
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = actionIcon,
+                        contentDescription = null,
+                        tint = if (actionEnabled) actionTint else completedGreen.copy(alpha = 0.78f),
+                        modifier = Modifier.size(26.dp)
                     )
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (actionEnabled) AuraColors.SurfaceCardLight
-                        else AuraColors.SurfaceCardLight.copy(alpha = 0.6f)
-                    )
-                    .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
-                    .clickable(enabled = actionEnabled, onClick = onActionClick),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = actionIcon,
-                    contentDescription = actionDescription,
-                    tint = if (actionEnabled) actionTint else actionTint.copy(alpha = 0.7f)
-                )
+            val showProgress = (activity.progress > 0f || activity.sessionState == ActivitySessionState.RUNNING ) && !activity.isStopwatch
+
+            if (showProgress) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${(activity.progress * 100).toInt()}%",
+                            style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = AuraColors.TextSecondary,
+                            fontSize = 10.sp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Progress",
+                            style = AuraTypography.BodySmall,
+                            color = AuraColors.TextMuted,
+                            fontSize = 10.sp
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(AuraColors.TimerTrack)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(activity.progress.coerceIn(0f, 1f))
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(accent)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-private fun Modifier.paddingSafe(): Modifier =
-    this.then(
-        Modifier
-            .fillMaxWidth()
-            .background(Color.Transparent)
-    )
+@Composable
+ fun ActivityMetaBadge(
+    label: String,
+    textColor: Color,
+    backgroundColor: Color,
+    borderColor: Color,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(backgroundColor)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        if (leadingIcon != null) {
+            Icon(
+                imageVector = leadingIcon,
+                contentDescription = null,
+                tint = textColor,
+                modifier = Modifier.size(12.dp)
+            )
+        }
+
+        Text(
+            text = label,
+            style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.Medium),
+            color = textColor,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun rememberActivityAccent(colorHex: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor("#${colorHex.removePrefix("#")}"))
+    } catch (_: IllegalArgumentException) {
+        AuraColors.YellowPrimary
+    }
+}

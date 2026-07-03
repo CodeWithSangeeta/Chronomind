@@ -80,7 +80,7 @@ fun IconOptionChip(
         Icon(
             imageVector = option.icon,
             contentDescription = null,
-            tint = if (isSelected) selectedColor else AuraColors.TextMuted,
+            tint = Color.White,
             modifier = Modifier.size(28.dp)
         )
     }
