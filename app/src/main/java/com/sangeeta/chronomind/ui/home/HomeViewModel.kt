@@ -199,25 +199,33 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun buildRecentActivities(activities: List<ActivityUiModel>): List<ActivityUiModel> {
+    private fun buildRecentActivities(
+        activities: List<ActivityUiModel>
+    ): List<ActivityUiModel> {
         return activities
-            .filter { activity ->
-                val label = activity.lastActiveDate.trim().lowercase()
-                label == "today" || label == "yesterday" || activity.elapsedSeconds > 0 ||
-                        (label.contains("days ago") &&
-                                (label.filter { it.isDigit() }.toIntOrNull() ?: 99) <= 7)
-            }
             .sortedWith(
                 compareByDescending<ActivityUiModel> { lastUsedWeight(it.lastActiveDate) }
-                    .thenByDescending { it.elapsedSeconds }
+                    .thenByDescending { it.id }
             )
-            .take(5)
+            .take(7)
     }
 
-    private fun lastUsedWeight(label: String): Int = when (label.trim().lowercase()) {
-        "today"     -> 100
-        "yesterday" -> 90
-        else        -> 0
+    private fun lastUsedWeight(label: String): Int {
+        return when (label.trim().lowercase()) {
+            "today" -> 100
+            "yesterday" -> 99
+            "never" -> -1
+            else -> {
+                val days = label
+                    .trim()
+                    .lowercase()
+                    .substringBefore("days ago")
+                    .trim()
+                    .toIntOrNull()
+
+                if (days != null) 90 - days else 0
+            }
+        }
     }
 
     private data class HomeCombinedState(
