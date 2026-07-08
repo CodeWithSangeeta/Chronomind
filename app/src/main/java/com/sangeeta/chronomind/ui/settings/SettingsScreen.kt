@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -78,15 +80,11 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-
-
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         viewModel.onNotificationPermissionResult(granted)
     }
-
-
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -120,6 +118,8 @@ fun SettingsScreen(
         onConfirmReset = { viewModel.resetOnboarding(onResetOnboarding) }
     )
 }
+
+
 
 @Composable
 private fun SettingsScreenContent(
@@ -164,7 +164,7 @@ private fun SettingsScreenContent(
                     SettingsToggleRow(
                         icon = Icons.Rounded.Notifications,
                         label = "Notifications",
-                        subtitle = "Allow app reminders and alerts",
+                        subtitle = "Show the active timer in a notification",
                         checked = uiState.notificationsEnabled,
                         onCheckedChange = onNotificationsToggle
                     )
@@ -187,12 +187,11 @@ private fun SettingsScreenContent(
             item {
                 SettingsSectionCard(
                     title = "FOCUS",
-                    footerText = "These are app-level defaults. Individual activities can override them."
-                ) {
+                    footerText = "Defaults apply to new activities. You can override them per activity."                ) {
                     SettingsDropdownRow(
-                        icon = Icons.Rounded.TrackChanges,
-                        label = "Missed streak",
-                        subtitle = "Default rule for new activities",
+                        icon = Icons.Rounded.RestartAlt,
+                        label = "Streak on missed day",
+                        subtitle = "What new activities do after a missed day",
                         selected = uiState.defaultStreakOnMiss,
                         options = listOf(
                             StreakBehavior.CONTINUE_STREAK,
@@ -201,12 +200,12 @@ private fun SettingsScreenContent(
                         labelFor = { it.label },
                         onSelected = onDefaultStreakOnMissSelected
                     )
+                    SettingsDivider()
 
-                    Spacer(modifier = Modifier.height(14.dp))
                     SettingsDropdownRow(
-                        icon = Icons.Rounded.TrackChanges,
+                        icon = Icons.Rounded.CheckCircle,
                         label = "Completion check",
-                        subtitle = "Default way to mark complete",
+                        subtitle = "How new activities are marked complete",
                         selected = uiState.defaultCompletionStyle,
                         options = listOf(
                             CompletionStyle.MANUAL_CHECK,
@@ -218,20 +217,6 @@ private fun SettingsScreenContent(
                 }
             }
 
-
-            item {
-                SettingsSectionCard(title = "WIDGETS") {
-                    uiState.widgetItems.forEachIndexed { index, item ->
-                        SettingsRow(
-                            item = item,
-                            onClick = { onRowClick(item.id) }
-                        )
-                        if (index != uiState.widgetItems.lastIndex) {
-                            SettingsDivider()
-                        }
-                    }
-                }
-            }
 
             item {
                 SettingsSectionCard(title = "HELP") {
@@ -304,551 +289,3 @@ private fun SettingsScreenContent(
         }
     }
 }
-
-@Composable
-private fun SettingsTopBar(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(AuraColors.SurfaceCard)
-                .border(1.dp, AuraColors.CardBorderDefault, CircleShape)
-                .clickable(onClick = onBackClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                contentDescription = "Back",
-                tint = AuraColors.TextPrimary
-            )
-        }
-        Text(
-                text = "Settings",
-                style = AuraTypography.DisplayMedium,
-                color = AuraColors.TextPrimary
-            )
-
-    }
-}
-
-@Composable
-private fun SettingsSectionCard(
-    title: String,
-    footerText: String? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        AuraColors.SurfaceCardLight,
-                        AuraColors.SurfaceCard
-                    )
-                )
-            )
-            .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(22.dp))
-            .padding(horizontal = 18.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = title,
-            style = AuraTypography.LabelMedium,
-            color = AuraColors.TextMuted
-        )
-
-        content()
-
-        if (!footerText.isNullOrBlank()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(AuraColors.BackgroundDark)
-                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(16.dp))
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = footerText,
-                    style = AuraTypography.BodySmall,
-                    color = AuraColors.TextSecondary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsRow(
-    item: SettingsRowUiModel,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = !item.isValueOnly, onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        RowIcon(icon = item.icon)
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                text = item.title,
-                style = AuraTypography.TitleMedium,
-                color = AuraColors.TextPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = item.subtitle,
-                style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        when {
-            item.isValueOnly && item.value != null -> {
-                Text(
-                    text = item.value,
-                    style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = AuraColors.YellowPrimary
-                )
-            }
-
-            item.value != null -> {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = item.value,
-                        style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.Medium),
-                        color = AuraColors.TextSecondary
-                    )
-                    Icon(
-                        imageVector = if (item.isExternal) Icons.Rounded.OpenInNew else Icons.Rounded.ChevronRight,
-                        contentDescription = null,
-                        tint = AuraColors.TextSecondary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            else -> {
-                Icon(
-                    imageVector = if (item.isExternal) Icons.Rounded.OpenInNew else Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    tint = AuraColors.TextSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsToggleRow(
-    icon: ImageVector,
-    label: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        RowIcon(icon = icon)
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = label,
-                style = AuraTypography.TitleMedium,
-                color = AuraColors.TextPrimary
-            )
-            Text(
-                text = subtitle,
-                style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary
-            )
-        }
-
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = AuraColors.BackgroundDark,
-                checkedTrackColor = AuraColors.YellowPrimary,
-                uncheckedThumbColor = AuraColors.TextMuted,
-                uncheckedTrackColor = AuraColors.SurfaceCardLight
-            )
-        )
-    }
-}
-
-//@Composable
-//private fun SettingsDropdownRow(
-//    icon: ImageVector,
-//    label: String,
-//    subtitle: String,
-//    selected: String,
-//    options: List<String>,
-//    displayMap: Map<String, String> = emptyMap(),
-//    onSelected: (String) -> Unit
-//) {
-//    var expanded by remember { mutableStateOf(false) }
-//
-//    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-//        Row(
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.spacedBy(14.dp)
-//        ) {
-//            RowIcon(icon = icon)
-//
-//            Column(modifier = Modifier.weight(1f)) {
-//                Text(
-//                    text = label,
-//                    style = AuraTypography.TitleMedium,
-//                    color = AuraColors.TextPrimary
-//                )
-//                Text(
-//                    text = subtitle,
-//                    style = AuraTypography.BodyMedium,
-//                    color = AuraColors.TextSecondary
-//                )
-//            }
-//        }
-//
-//        Box {
-//            Row(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .clip(RoundedCornerShape(14.dp))
-//                    .background(AuraColors.BackgroundDark)
-//                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(14.dp))
-//                    .clickable { expanded = true }
-//                    .padding(horizontal = 16.dp, vertical = 14.dp),
-//                verticalAlignment = Alignment.CenterVertically,
-//                horizontalArrangement = Arrangement.SpaceBetween
-//            ) {
-//                Text(
-//                    text = displayMap[selected] ?: selected,
-//                    style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.Medium),
-//                    color = AuraColors.TextPrimary
-//                )
-//
-//                Icon(
-//                    imageVector = Icons.Rounded.ExpandMore,
-//                    contentDescription = null,
-//                    tint = AuraColors.TextSecondary
-//                )
-//            }
-//
-//            DropdownMenu(
-//                expanded = expanded,
-//                onDismissRequest = { expanded = false },
-//                containerColor = AuraColors.SurfaceCard
-//            ) {
-//                options.forEach { option ->
-//                    DropdownMenuItem(
-//                        text = {
-//                            Text(
-//                                text = displayMap[option] ?: option,
-//                                style = AuraTypography.BodyMedium,
-//                                color = if (option == selected) {
-//                                    AuraColors.YellowPrimary
-//                                } else {
-//                                    AuraColors.TextPrimary
-//                                }
-//                            )
-//                        },
-//                        onClick = {
-//                            expanded = false
-//                            onSelected(option)
-//                        }
-//                    )
-//                }
-//            }
-//        }
-//    }
-//}
-
-
-
-@Composable
-private fun <T> SettingsDropdownRow(
-    icon: ImageVector,
-    label: String,
-    subtitle: String,
-    selected: T,
-    options: List<T>,
-    labelFor: (T) -> String,
-    onSelected: (T) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            RowIcon(icon = icon)
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = label, style = AuraTypography.TitleMedium, color = AuraColors.TextPrimary)
-                Text(text = subtitle, style = AuraTypography.BodyMedium, color = AuraColors.TextSecondary)
-            }
-        }
-
-        Box {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(AuraColors.BackgroundDark)
-                    .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(14.dp))
-                    .clickable { expanded = true }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = labelFor(selected),
-                    style = AuraTypography.BodyMedium.copy(fontWeight = FontWeight.Medium),
-                    color = AuraColors.TextPrimary
-                )
-
-                Icon(
-                    imageVector = Icons.Rounded.ExpandMore,
-                    contentDescription = null,
-                    tint = AuraColors.TextSecondary
-                )
-            }
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                containerColor = AuraColors.SurfaceCard
-            ) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = labelFor(option),
-                                style = AuraTypography.BodyMedium,
-                                color = if (option == selected) AuraColors.YellowPrimary else AuraColors.TextPrimary
-                            )
-                        },
-                        onClick = {
-                            expanded = false
-                            onSelected(option)
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun DangerZoneCard(
-    onClearDataClick: () -> Unit,
-    onResetOnboardingClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color(0xFF1A0A0A))
-            .border(1.dp, Color(0xFFE35D5D).copy(alpha = 0.28f), RoundedCornerShape(22.dp))
-            .padding(horizontal = 18.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = "DANGER ZONE",
-            style = AuraTypography.LabelMedium,
-            color = Color(0xFFE35D5D)
-        )
-
-        Text(
-            text = "These actions are permanent and cannot be undone.",
-            style = AuraTypography.BodySmall,
-            color = AuraColors.TextSecondary
-        )
-
-        DangerButton(
-            icon = Icons.Rounded.DeleteForever,
-            label = "Clear all activities",
-            onClick = onClearDataClick
-        )
-
-        DangerButton(
-            icon = Icons.Rounded.RestartAlt,
-            label = "Reset onboarding",
-            onClick = onResetOnboardingClick
-        )
-    }
-}
-
-@Composable
-private fun DangerButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF221212))
-            .border(1.dp, Color(0xFFE35D5D).copy(alpha = 0.22f), RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF311818)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color(0xFFE35D5D),
-                modifier = Modifier.size(18.dp)
-            )
-        }
-
-        Text(
-            text = label,
-            style = AuraTypography.TitleMedium,
-            color = Color(0xFFFFD2D2),
-            modifier = Modifier.weight(1f)
-        )
-
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            tint = Color(0xFFE35D5D),
-            modifier = Modifier.size(18.dp)
-        )
-    }
-}
-
-@Composable
-private fun ConfirmDialog(
-    title: String,
-    body: String,
-    confirmText: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = AuraColors.SurfaceCard,
-        title = {
-            Text(
-                text = title,
-                style = AuraTypography.TitleMedium,
-                color = AuraColors.TextPrimary
-            )
-        },
-        text = {
-            Text(
-                text = body,
-                style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(
-                    text = confirmText,
-                    color = AuraColors.YellowPrimary
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    text = "Cancel",
-                    color = AuraColors.TextSecondary
-                )
-            }
-        }
-    )
-}
-
-@Composable
-private fun SettingsDivider() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(Color.White.copy(alpha = 0.05f))
-    )
-}
-
-@Composable
-private fun RowIcon(icon: ImageVector) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(AuraColors.YellowPrimary.copy(alpha = 0.10f))
-            .border(1.dp, AuraColors.YellowPrimary.copy(alpha = 0.22f), CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = AuraColors.YellowPrimary,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
-//private fun resolveNotificationPermissionState(activity: Activity?): NotificationPermissionState {
-//    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-//        return NotificationPermissionState.NOT_REQUIRED
-//    }
-//
-//    val safeActivity = activity ?: return NotificationPermissionState.DENIED
-//
-//    return if (
-//        ContextCompat.checkSelfPermission(
-//            safeActivity,
-//            Manifest.permission.POST_NOTIFICATIONS
-//        ) == PackageManager.PERMISSION_GRANTED
-//    ) {
-//        NotificationPermissionState.GRANTED
-//    } else {
-//        NotificationPermissionState.DENIED
-//    }
-//}

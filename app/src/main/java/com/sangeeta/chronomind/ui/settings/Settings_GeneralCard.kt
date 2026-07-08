@@ -13,14 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -30,12 +29,61 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.sangeeta.chronomind.ui.create_activity.FormSectionCard
+import androidx.compose.ui.unit.sp
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
+
+@Composable
+ fun SettingsToggleRow(
+    icon: ImageVector,
+    label: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        RowIcon(icon = icon)
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = label,
+                style = AuraTypography.TitleMedium,
+                color = AuraColors.TextPrimary
+            )
+            Text(
+                text = subtitle,
+                fontSize = 12.sp,
+                style = AuraTypography.BodyMedium,
+                color = AuraColors.TextMuted
+
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = AuraColors.BackgroundDark,
+                checkedTrackColor = AuraColors.YellowPrimary,
+                uncheckedThumbColor = AuraColors.TextMuted,
+                uncheckedTrackColor = AuraColors.SurfaceCardLight
+            )
+        )
+    }
+}
+
+
 
 @Composable
 fun SettingsReminderSection(
@@ -48,60 +96,54 @@ fun SettingsReminderSection(
     onMinuteChange: (Int) -> Unit,
     onAmPmChange: (String) -> Unit
 ) {
-    FormSectionCard(title = "Reminder") {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Notifications,
-                        contentDescription = null,
-                        tint = AuraColors.YellowPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            text = "Daily reminder",
-                            style = AuraTypography.TitleMedium,
-                            color = AuraColors.TextPrimary
-                        )
-                        Text(
-                            text = "Scroll to set the reminder time",
-                            style = AuraTypography.BodySmall,
-                            color = AuraColors.TextSecondary
-                        )
-                    }
-                }
 
-                Switch(
-                    checked = isEnabled,
-                    onCheckedChange = onReminderToggle,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = AuraColors.BackgroundDark,
-                        checkedTrackColor = AuraColors.YellowPrimary,
-                        uncheckedThumbColor = AuraColors.TextMuted,
-                        uncheckedTrackColor = AuraColors.SurfaceCard
-                    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+
+            RowIcon(icon =Icons.Rounded.Schedule,)
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+                Text(
+                    text = "Daily reminder",
+                    style = AuraTypography.TitleMedium,
+                    color = AuraColors.TextPrimary
+                )
+                Text(
+                    text = "Scroll to set a time for your daily reminder",
+                    fontSize = 12.sp,
+                    style = AuraTypography.BodySmall,
+                    color = AuraColors.TextMuted
                 )
             }
 
-            if (isEnabled) {
-                CompactScrollTimePicker(
-                    selectedHour = selectedHour,
-                    selectedMinute = selectedMinute,
-                    selectedAmPm = selectedAmPm,
-                    onHourChange = onHourChange,
-                    onMinuteChange = onMinuteChange,
-                    onAmPmChange = onAmPmChange
-                )
-            }
-        }
+
+        Switch(
+            checked = isEnabled,
+            onCheckedChange = onReminderToggle,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = AuraColors.BackgroundDark,
+                checkedTrackColor = AuraColors.YellowPrimary,
+                uncheckedThumbColor = AuraColors.TextMuted,
+                uncheckedTrackColor = AuraColors.SurfaceCard
+            )
+        )
+    }
+
+    if (isEnabled) {
+        CompactScrollTimePicker(
+            selectedHour = selectedHour,
+            selectedMinute = selectedMinute,
+            selectedAmPm = selectedAmPm,
+            onHourChange = onHourChange,
+            onMinuteChange = onMinuteChange,
+            onAmPmChange = onAmPmChange
+        )
     }
 }
 
@@ -117,7 +159,8 @@ fun CompactScrollTimePicker(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
+            .padding(start =36.dp)
+            .width(260.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(AuraColors.BackgroundDark)
             .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(14.dp))
@@ -224,3 +267,6 @@ fun SingleValueScrollPicker(
         }
     }
 }
+
+
+

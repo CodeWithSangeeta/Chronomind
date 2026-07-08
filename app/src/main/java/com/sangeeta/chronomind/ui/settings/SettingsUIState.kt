@@ -6,11 +6,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.sangeeta.chronomind.ui.create_activity.CompletionStyle
 import com.sangeeta.chronomind.ui.create_activity.StreakBehavior
 
-enum class NotificationPermissionState {
-    GRANTED,
-    DENIED,
-    NOT_REQUIRED
-}
 
 data class SettingsRowUiModel(
     val id: String,

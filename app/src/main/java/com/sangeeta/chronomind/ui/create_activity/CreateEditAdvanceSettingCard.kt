@@ -96,7 +96,7 @@ fun AdvancedSettingsSection(
             ) {
                 DropdownSettingRow(
                     label = "Streak on missed day",
-                    supportingText = "Choose what happens to your streak if you miss a day.",
+                    supportingText = "What happens if you miss a day.",
                     selectedLabel = selectedStreakBehavior.label,
                     options = listOf(
                         "Continue streak" to {
@@ -110,7 +110,7 @@ fun AdvancedSettingsSection(
 
                 DropdownSettingRow(
                     label = "Completion check",
-                    supportingText = "Choose how this activity gets marked as complete.",
+                    supportingText = "How this activity is marked complete.",
                     selectedLabel = selectedCompletionStyle.label,
                     options = listOf(
                         "Manual check" to {
@@ -146,7 +146,7 @@ private fun DropdownSettingRow(
             Text(
                 text = supportingText,
                 style = AuraTypography.BodySmall,
-                color = AuraColors.TextSecondary
+                color = AuraColors.TextMuted
             )
         }
 

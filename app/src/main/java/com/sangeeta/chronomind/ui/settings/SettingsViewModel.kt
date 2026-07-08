@@ -33,8 +33,6 @@ class SettingsViewModel @Inject constructor(
 
     private val localUiState = MutableStateFlow(SettingsUiState())
 
-    // combine only supports up to 5 positional parameters. 
-    // We combine the completion style and streak behavior into a nested flow to stay within the limit.
     val uiState: StateFlow<SettingsUiState> = combine(
         localUiState,
         settingsRepository.notificationsEnabled,
@@ -56,7 +54,6 @@ class SettingsViewModel @Inject constructor(
             reminderAmPm = parsed.amPm,
             defaultCompletionStyle = completionStyle,
             defaultStreakOnMiss = streakBehavior,
-            widgetItems = defaultWidgetItems(),
             helpItems = defaultHelpItems(),
             trustItems = defaultTrustItems(),
             aboutItems = defaultAboutItems()
@@ -170,24 +167,71 @@ class SettingsViewModel @Inject constructor(
 
     private data class ReminderParts(val hour: Int, val minute: Int, val amPm: String)
 
-    private fun defaultWidgetItems(): List<SettingsRowUiModel> = listOf(
-        SettingsRowUiModel(id = "widgetsetup", title = "Widget setup", subtitle = "Configure home screen widgets", icon = Icons.Rounded.Widgets)
-    )
-
     private fun defaultHelpItems(): List<SettingsRowUiModel> = listOf(
-        SettingsRowUiModel(id = "helpcenter", title = "Help center", subtitle = "Get support and guidance", icon = Icons.Rounded.Help),
-        SettingsRowUiModel(id = "shareapp", title = "Share app", subtitle = "Send ChronoMind to a friend", icon = Icons.Rounded.Share),
-        SettingsRowUiModel(id = "rateapp", title = "Rate app", subtitle = "Support us on Play Store", icon = Icons.Rounded.StarRate, isExternal = true)
+        SettingsRowUiModel(
+            id = "faq",
+            title = "FAQ",
+            subtitle = "Common questions and answers",
+            icon = Icons.Rounded.Help
+        ),
+        SettingsRowUiModel(
+            id = "sendfeedback",
+            title = "Send feedback",
+            subtitle = "Share suggestions and ideas",
+            icon = Icons.Rounded.Feedback
+        ),
+        SettingsRowUiModel(
+            id = "reportbug",
+            title = "Report a bug",
+            subtitle = "Something not working properly?",
+            icon = Icons.Rounded.BugReport
+        )
     )
 
     private fun defaultTrustItems(): List<SettingsRowUiModel> = listOf(
-        SettingsRowUiModel(id = "privacy", title = "Privacy policy", subtitle = "Read how your data is handled", icon = Icons.Rounded.PrivacyTip, isExternal = true),
-        SettingsRowUiModel(id = "terms", title = "Terms and conditions", subtitle = "Usage rules and legal details", icon = Icons.Rounded.Policy, isExternal = true),
-        SettingsRowUiModel(id = "permissions", title = "Permissions", subtitle = "Understand app access", icon = Icons.Rounded.Shield)
+        SettingsRowUiModel(
+            id = "privacy",
+            title = "Privacy policy",
+            subtitle = "How your data is handled",
+            icon = Icons.Rounded.Policy,
+            isExternal = true
+        ),
+        SettingsRowUiModel(
+            id = "terms",
+            title = "Terms of service",
+            subtitle = "Rules and usage guidelines",
+            icon = Icons.Rounded.Gavel,
+            isExternal = true
+        ),
+        SettingsRowUiModel(
+            id = "rateapp",
+            title = "Rate app",
+            subtitle = "Support ChronoMind on Play Store",
+            icon = Icons.Rounded.Star,
+            isExternal = true
+        )
     )
 
     private fun defaultAboutItems(): List<SettingsRowUiModel> = listOf(
-        SettingsRowUiModel(id = "version", title = "App version", subtitle = "Current installed build", icon = Icons.Rounded.Info, value = "v1.0.0", isValueOnly = true),
-        SettingsRowUiModel(id = "developer", title = "Developer", subtitle = "Made with focus for better habits", icon = Icons.Rounded.WorkspacePremium)
+        SettingsRowUiModel(
+            id = "version",
+            title = "App version",
+            subtitle = "Current installed build",
+            icon = Icons.Rounded.Info,
+            value = "v1.0.0",
+            isValueOnly = true
+        ),
+        SettingsRowUiModel(
+            id = "developer",
+            title = "Developer",
+            subtitle = "Built by Sangeeta Yadav",
+            icon = Icons.Rounded.Code
+        ),
+        SettingsRowUiModel(
+            id = "licenses",
+            title = "Open source licenses",
+            subtitle = "Third-party libraries and licenses",
+            icon = Icons.Rounded.Article
+        )
     )
 }
