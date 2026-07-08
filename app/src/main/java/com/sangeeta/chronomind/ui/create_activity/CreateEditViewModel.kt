@@ -11,6 +11,7 @@ import com.sangeeta.chronomind.repository.SettingsRepository
 import com.sangeeta.chronomind.service.TimerForegroundService
 import com.sangeeta.chronomind.ui.model.ActivityColorOption
 import com.sangeeta.chronomind.ui.model.ActivityIconOption
+import com.sangeeta.chronomind.ui.navigation.ChronoRoutes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -36,7 +37,7 @@ class CreateEditViewModel @Inject constructor(
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
-    private val activityId: Int = savedStateHandle["activityId"] ?: -1
+    private val activityId: Int = savedStateHandle.get<Int>(ChronoRoutes.CreateEditActivity.ARG) ?: -1
     private val isEditMode: Boolean = activityId != -1
 
     private val _uiState = MutableStateFlow(
@@ -175,11 +176,6 @@ class CreateEditViewModel @Inject constructor(
                 colorHex = current.selectedColor.hex,
                 targetType = if (current.targetType == TargetType.TIMER) "TIMER" else "STOPWATCH",
                 completionStyle = current.completionStyle.name,
-//                completionStyle = if (current.completionStyle == CompletionStyle.AUTO_CHECK) {
-//                    "TIMER_END"
-//                } else {
-//                    "MANUAL"
-//                },
                 hasPendingSession = if (isEditMode) current.existingHasPendingSession else false,
                 pendingSessionDate = if (isEditMode) current.existingPendingSessionDate else "",
                 sessionStartedAtEpochMillis = if (isEditMode) current.existingSessionStartedAtEpochMillis else null,

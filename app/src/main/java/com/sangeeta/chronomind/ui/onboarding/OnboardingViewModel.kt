@@ -99,7 +99,6 @@ class OnboardingViewModel @Inject constructor(
                 streakMiss     = current.selectedStreakMissChoice?.name ?: ""
             )
 
-            // API 24 compatible date formatting
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
             val continueStreak = current.selectedStreakMissChoice == StreakMissChoice.CONTINUE
 
@@ -116,7 +115,7 @@ class OnboardingViewModel @Inject constructor(
                         orderIndex = index,
                         icon = area.icon,
                         targetType = "TIMER",
-                        completionStyle = if (current.selectedCheckInStyle == CheckInStyle.AUTO_CHECK) "TIMER_END" else "MANUAL"
+                        completionStyle = if (current.selectedCheckInStyle == CheckInStyle.AUTO_CHECK) "AUTO_CHECK" else "MANUAL_CHECK"
                     )
                 }
 

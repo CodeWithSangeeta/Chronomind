@@ -46,33 +46,26 @@ class OnboardingRepository @Inject constructor(
         syncSettingsFromOnboarding(onboardingDataStore.checkInStyle.first(), value)
     }
 
-    private suspend fun syncSettingsFromOnboarding(checkIn: String, streakMiss: String) {
-        settingsRepository.setDefaultCompletionStyle(
-            if (checkIn == "AUTO" || checkIn == "TIMER_END") {
+    private suspend fun syncSettingsFromOnboarding(
+        checkIn: String,
+        streakMiss: String
+    ) {
+        val completionStyle = when (checkIn.uppercase()) {
+            "AUTOCHECK", "AUTO_CHECK", "AUTO", "TIMEREND", "TIMER_END" ->
                 CompletionStyle.AUTO_CHECK
-            } else {
+            else ->
                 CompletionStyle.MANUAL_CHECK
-            }
-        )
+        }
 
-        settingsRepository.setDefaultStreakBehavior(
-            if (streakMiss == "RESET" || streakMiss == "RESET_TO_ZERO") {
+        val streakBehavior = when (streakMiss.uppercase()) {
+            "RESET", "RESETTOZERO", "RESET_TO_ZERO" ->
                 StreakBehavior.RESET_TO_ZERO
-            } else {
+            else ->
                 StreakBehavior.CONTINUE_STREAK
-            }
-        )
+        }
 
-        settingsRepository.seedDefaultsIfMissing(
-            completionStyle = when (checkIn.uppercase()) {
-                "AUTO_CHECK", "TIMER_END", "TIMEREND", "AUTO" -> CompletionStyle.AUTO_CHECK
-                else -> CompletionStyle.MANUAL_CHECK
-            },
-            streakBehavior = when (streakMiss.uppercase()) {
-                "RESET_TO_ZERO", "RESETTOZERO", "RESET" -> StreakBehavior.RESET_TO_ZERO
-                else -> StreakBehavior.CONTINUE_STREAK
-            }
-        )
+        settingsRepository.setDefaultCompletionStyle(completionStyle)
+        settingsRepository.setDefaultStreakBehavior(streakBehavior)
     }
 
 
