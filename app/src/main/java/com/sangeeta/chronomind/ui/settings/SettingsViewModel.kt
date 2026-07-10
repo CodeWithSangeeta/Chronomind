@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sangeeta.chronomind.R
 import com.sangeeta.chronomind.reminder.ReminderScheduler
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
@@ -174,18 +175,13 @@ class SettingsViewModel @Inject constructor(
             subtitle = "Common questions and answers",
             icon = Icons.Rounded.Help
         ),
-        SettingsRowUiModel(
-            id = "sendfeedback",
-            title = "Send feedback",
-            subtitle = "Share suggestions and ideas",
-            icon = Icons.Rounded.Feedback
-        ),
-        SettingsRowUiModel(
-            id = "reportbug",
-            title = "Report a bug",
-            subtitle = "Something not working properly?",
-            icon = Icons.Rounded.BugReport
-        )
+            SettingsRowUiModel(
+                id = "support_portal",
+                title = "Report an issue / Feedback",
+                subtitle = "Bugs, feature requests, and support",
+                icon = Icons.Rounded.Feedback,
+                isExternal = true
+            )
     )
 
     private fun defaultTrustItems(): List<SettingsRowUiModel> = listOf(
@@ -194,6 +190,7 @@ class SettingsViewModel @Inject constructor(
             title = "Privacy policy",
             subtitle = "How your data is handled",
             icon = Icons.Rounded.Policy,
+            value = context.getString(R.string.url_privacy_policy),
             isExternal = true
         ),
         SettingsRowUiModel(
@@ -201,6 +198,7 @@ class SettingsViewModel @Inject constructor(
             title = "Terms of service",
             subtitle = "Rules and usage guidelines",
             icon = Icons.Rounded.Gavel,
+            value = context.getString(R.string.url_terms_of_service),
             isExternal = true
         ),
         SettingsRowUiModel(
@@ -218,14 +216,15 @@ class SettingsViewModel @Inject constructor(
             title = "App version",
             subtitle = "Current installed build",
             icon = Icons.Rounded.Info,
-            value = "v1.0.0",
+            value = "v${com.sangeeta.chronomind.BuildConfig.VERSION_NAME}",
             isValueOnly = true
         ),
         SettingsRowUiModel(
             id = "developer",
             title = "Developer",
             subtitle = "Built by Sangeeta Yadav",
-            icon = Icons.Rounded.Code
+            icon = Icons.Rounded.Code,
+            isExternal = true
         ),
         SettingsRowUiModel(
             id = "licenses",

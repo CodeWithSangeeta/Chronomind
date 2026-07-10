@@ -92,7 +92,6 @@ fun HistorySessionCard(
             }
         }
 
-        // Status badge
         SessionStatusBadge(
             isCompleted = session.isCompleted,
             label = session.statusLabel,

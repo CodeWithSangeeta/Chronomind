@@ -68,5 +68,4 @@ class OnboardingRepository @Inject constructor(
         settingsRepository.setDefaultStreakBehavior(streakBehavior)
     }
 
-
 }

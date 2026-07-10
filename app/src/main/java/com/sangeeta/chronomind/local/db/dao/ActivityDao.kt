@@ -70,7 +70,6 @@ interface ActivityDao {
     @Query("UPDATE activities SET isRunning = 0")
     suspend fun stopAll()
 
-    // Pass ImageVector here; Room will use the TypeConverter to save it as String
     @Query("UPDATE activities SET icon = :icon, colorHex = :colorHex WHERE id = :id")
     suspend fun updateAppearance(id: Int, icon: androidx.compose.ui.graphics.vector.ImageVector, colorHex: String)
 

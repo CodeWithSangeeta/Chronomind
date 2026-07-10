@@ -12,12 +12,14 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.sangeeta.chronomind.R
 import com.sangeeta.chronomind.ui.activities.AllActivitiesScreen
 import com.sangeeta.chronomind.ui.create_activity.CreateEditActivityScreen
 import com.sangeeta.chronomind.ui.history.HistoryScreen
@@ -25,12 +27,10 @@ import com.sangeeta.chronomind.ui.home.HomeScreen
 import com.sangeeta.chronomind.ui.insights.InsightsScreen
 import com.sangeeta.chronomind.ui.settings.SettingsScreen
 
-// ---------- Shared transition specs ----------
 
 private const val DURATION_ENTER = 260
 private const val DURATION_EXIT = 200
 
-// Forward push: new screen fades+scales in, old screen fades+scales out slightly
 private val defaultEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     fadeIn(animationSpec = tween(DURATION_ENTER, easing = FastOutSlowInEasing)) +
             scaleIn(
@@ -47,7 +47,6 @@ private val defaultExit: AnimatedContentTransitionScope<*>.() -> ExitTransition 
             )
 }
 
-// Back/pop: reverse feel, returning screen scales down from 1.04 -> 1, old scales up slightly
 private val defaultPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     fadeIn(animationSpec = tween(DURATION_ENTER, easing = FastOutSlowInEasing)) +
             scaleIn(
@@ -64,7 +63,6 @@ private val defaultPopExit: AnimatedContentTransitionScope<*>.() -> ExitTransiti
             )
 }
 
-// Sheet-style transitions for Create/Edit Activity (feels like a modal, not a lateral push)
 private val sheetEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     slideInVertically(
         initialOffsetY = { fullHeight -> fullHeight / 3 },
@@ -126,7 +124,6 @@ fun MainNavHost(
             )
         }
 
-        // Sheet-style transition override for this destination only
         composable(
             route = ChronoRoutes.CreateEditActivity.route,
             arguments = listOf(
@@ -165,19 +162,63 @@ fun MainNavHost(
         }
 
         composable(route = ChronoRoutes.Settings.route) {
+            val context = LocalContext.current
             SettingsScreen(
                 onBackClick = { navController.popBackStack() },
                 onRowClick = { rowId ->
                     when (rowId) {
-                        "widgetsetup" -> { /* navController.navigate(ChronoRoutes.WidgetSetup.route) */ }
-                        "helpcenter"  -> { /* open help url */ }
-                        "shareapp"    -> { /* share intent */ }
-                        "rateapp"     -> { /* open play store */ }
-                        "privacy"     -> { /* open privacy url */ }
-                        "terms"       -> { /* open terms url */ }
-                        "permissions" -> { /* open app settings */ }
-                        "developer"   -> { /* open portfolio/linkedin */ }
-                        else          -> { }
+                        "privacy" -> {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse(context.getString(R.string.url_privacy_policy))
+                            }
+                            context.startActivity(intent)
+                        }
+                        "terms" -> {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse(context.getString(R.string.url_terms_of_service))
+                            }
+                            context.startActivity(intent)
+                        }
+                        "rateapp" -> {
+                            // Try opening deep-link straight into Play Store app container first
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse(context.getString(R.string.url_play_store_listing))
+                            }
+                            runCatching {
+                                context.startActivity(intent)
+                            }.onFailure {
+                                // Fallback safely to web browser view if running on emulator/no store app present
+                                val webIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                    data = android.net.Uri.parse(context.getString(R.string.url_play_store_fallback))
+                                }
+                                context.startActivity(webIntent)
+                            }
+                        }
+                        "developer" -> {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse(context.getString(R.string.url_developer_portfolio))
+                            }
+                            context.startActivity(intent)
+                        }
+                        "support_portal" -> {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse(context.getString(R.string.url_support_portal))
+                            }
+                            runCatching {
+                                context.startActivity(intent)
+                            }.onFailure {
+                                android.widget.Toast.makeText(context, "Cannot open web browser.", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                      //  "faq" -> {}
+                        "licenses" -> {
+                            // Launch a standard system viewer or show a hosted list of third-party attributions
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                data = android.net.Uri.parse("https://github.com/CodeWithSangeeta/chronomind-privacy/blob/main/LICENSES.txt")
+                            }
+                            context.startActivity(intent)
+                        }
+                        else -> { }
                     }
                 },
                 onResetOnboarding = {

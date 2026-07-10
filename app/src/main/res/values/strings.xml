@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">ChronoMind</string>
+
+
+    <string name="url_privacy_policy">https://sites.google.com/view/chronomind-privacy-policy</string>
+    <string name="url_terms_of_service">https://sites.google.com/view/chronomind-privacy-policy</string>
+    <string name="url_play_store_listing">market://details?id=com.sangeeta.chronomind</string>
+    <string name="url_play_store_fallback">https://play.google.com/store/apps/details?id=com.sangeeta.chronomind</string>
+    <string name="url_developer_portfolio">https://github.com/CodeWithSangeeta</string>
+
+
+    <string name="url_support_portal">https://forms.gle/1nRb2PcRTqURtnKw8</string>
+
+    <string name="faq_q1">Where is my focus history saved?</string>
+    <string name="faq_a1">100% on your own phone! ChronoMind doesn\'t use cloud servers. All your focus sessions, activities, and daily streaks are saved locally inside a secure database on your device. Your data belongs to you.</string>
+
+    <string name="faq_q2">What is the difference between Timer and Stopwatch mode?</string>
+    <string name="faq_a2">Timer mode counts down to zero based on a target focus time you set. Stopwatch mode counts upward from 00:00 endlessly until you decide to hit stop. Use a timer for strict sessions and a stopwatch for free-flowing work.</string>
+
+    <string name="faq_q3">What happens if I miss a day? Will my streak reset?</string>
+    <string name="faq_a3">That depends entirely on you! When you create or edit an activity, you can choose the streak rule. "Continue Streak" lets you pick up right where you left off even if you skip a day, while "Reset to Zero" challenges you to stay perfectly consistent every single day.</string>
+
+    <string name="faq_q4">How do tasks get marked as Complete?</string>
+    <string name="faq_a4">If you turn on "Auto check-in" for an activity, it will automatically save and finish the moment your countdown timer reaches zero. If you prefer "Manual check-in", the app will keep counting until you click "Mark Complete" yourself.</string>
 </resources>

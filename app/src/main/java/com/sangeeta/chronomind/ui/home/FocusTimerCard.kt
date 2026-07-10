@@ -13,44 +13,39 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.MoreHoriz
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -58,13 +53,17 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.sangeeta.chronomind.ui.model.ActivityDisplayState
 import com.sangeeta.chronomind.ui.model.ActivitySessionState
+import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.sin
 
 private val CardOuter = Color(0xFF070707)
@@ -85,6 +84,7 @@ private val Success = Color(0xFF6ED38B)
 @Composable
 fun FocusTimerCard(
     heroState: ActivityDisplayState?,
+    selectedActivity: ActivityUiModel?,
     onStartFocus: () -> Unit,
     onPause: () -> Unit,
     onFinish: () -> Unit,
@@ -93,7 +93,6 @@ fun FocusTimerCard(
 ) {
     val progress = heroState?.progress ?: 0f
     val timeText = heroState?.displayTime ?: "00:00"
-    val title = heroState?.name ?: "No activity selected"
     val isRunning = heroState?.isRunning == true
     val isCompleted = heroState?.sessionState == ActivitySessionState.COMPLETED_TODAY
     val isStopwatch = heroState?.isStopwatch == true
@@ -101,10 +100,10 @@ fun FocusTimerCard(
     val streakDays = heroState?.streakDays ?: 0
 
     val statusText = when (heroState?.sessionState) {
-        ActivitySessionState.RUNNING -> "Focus in session"
-        ActivitySessionState.PENDING -> "Paused session"
-        ActivitySessionState.COMPLETED_TODAY -> "Completed today"
-        else -> "Start when ready"
+        ActivitySessionState.RUNNING -> "Running"
+        ActivitySessionState.PENDING -> "Paused"
+        ActivitySessionState.COMPLETED_TODAY -> "Done"
+        else -> "Ready"
     }
 
     val pulse = rememberInfiniteTransition(label = "focus-card-pulse")
@@ -118,15 +117,15 @@ fun FocusTimerCard(
         label = "focus-glow"
     )
 
-    var menuExpanded by remember { mutableStateOf(false) }
+    var showDetailsDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .shadow(
-                elevation = 28.dp,
+                elevation = 30.dp,
                 shape = RoundedCornerShape(34.dp),
-                ambientColor = Gold.copy(alpha = 0.12f),
+                ambientColor = Gold.copy(alpha = 0.10f),
                 spotColor = Color.Black
             )
             .clip(RoundedCornerShape(34.dp))
@@ -140,204 +139,247 @@ fun FocusTimerCard(
                 color = BorderSoft,
                 shape = RoundedCornerShape(34.dp)
             )
-            .padding(horizontal = 18.dp, vertical = 18.dp)
     ) {
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .clip(RoundedCornerShape(34.dp))
                 .background(
-                    Brush.radialGradient(
+                    Brush.verticalGradient(
                         colors = listOf(
-                            Gold.copy(alpha = glowAlpha * 0.18f),
-                            Color.Transparent
-                        ),
-                        center = Offset(220f, 160f),
-                        radius = 700f
+                            Color.White.copy(alpha = 0.06f),
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.20f)
+                        )
                     )
                 )
         )
 
-        Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(1.dp)
+                .clip(RoundedCornerShape(33.dp))
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Gold.copy(alpha = 0.28f),
+                            Color.White.copy(alpha = 0.12f),
+                            Color.Transparent
+                        ),
+                        start = Offset.Zero,
+                        end = Offset(500f, 500f)
+                    ),
+                    shape = RoundedCornerShape(33.dp)
+                )
+        )
+
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(1.dp)
+                .clip(RoundedCornerShape(33.dp))
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Gold.copy(alpha = glowAlpha * 0.16f),
+                            Color.Transparent
+                        ),
+                        center = Offset(220f, 150f),
+                        radius = 760f
+                    )
+                )
+        )
+
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .shadow(
+                            elevation = 18.dp,
+                            shape = CircleShape,
+                            ambientColor = Color.Black,
+                            spotColor = Gold.copy(alpha = 0.18f)
+                        )
+                        .clip(CircleShape)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF1B1B1B), Color(0xFF0C0C0C))
+                            )
+                        )
+                        .border(1.dp, BorderSoft, CircleShape)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { showDetailsDialog = true },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = title,
-                        color = TextPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "More details",
+                        tint = Gold,
+                        modifier = Modifier.size(20.dp)
                     )
-                    Text(
-                        text = statusText,
-                        color = if (isCompleted) Success else TextSecondary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Box {
-                    Box(
-                        modifier = Modifier
-                            .size(42.dp)
-                            .shadow(
-                                elevation = 18.dp,
-                                shape = CircleShape,
-                                ambientColor = Color.Black,
-                                spotColor = Gold.copy(alpha = 0.18f)
-                            )
-                            .clip(CircleShape)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color(0xFF1A1A1A), Color(0xFF0D0D0D))
-                                )
-                            )
-                            .border(1.dp, BorderSoft, CircleShape)
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            ) { menuExpanded = true },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MoreHoriz,
-                            contentDescription = "More details",
-                            tint = Gold,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                        modifier = Modifier
-                            .background(Color.Black)
-                            .border(1.dp, BorderSoft, RoundedCornerShape(18.dp))
-                    ) {
-                        DropdownMenuItem(
-                            text = { MenuText("Type: ${if (isStopwatch) "Stopwatch" else "Target $targetMinutes min"}") },
-                            onClick = { menuExpanded = false }
-                        )
-                        DropdownMenuItem(
-                            text = { MenuText("Streak: $streakDays days") },
-                            onClick = { menuExpanded = false }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                MenuText(
-                                    when (heroState?.sessionState) {
-                                        ActivitySessionState.RUNNING -> "Session running"
-                                        ActivitySessionState.PENDING -> "Session paused"
-                                        ActivitySessionState.COMPLETED_TODAY -> "Already completed today"
-                                        else -> "Not started yet"
-                                    }
-                                )
-                            },
-                            onClick = { menuExpanded = false }
-                        )
-                    }
                 }
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .weight(1.18f)
+                        .weight(2.05f)
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(32.dp))
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    SurfaceTop,
-                                    SurfaceMid,
-                                    SurfaceLow
-                                )
-                            )
-                        )
-                        .border(1.dp, BorderSoft, RoundedCornerShape(32.dp))
-                        .padding(14.dp),
+                        .padding(1.dp),
                     contentAlignment = Alignment.Center
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .padding(3.dp)
+                            .shadow(
+                                elevation = 24.dp,
+                                shape = CircleShape,
+                                ambientColor = Gold.copy(alpha = 0.06f),
+                                spotColor = Color.Black
+                            )
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF202020),
+                                        Color(0xFF111111),
+                                        Color(0xFF090909)
+                                    )
+                                )
+                            )
+                            .border(
+                                1.dp,
+                                Brush.linearGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.10f),
+                                        Color.Black.copy(alpha = 0.24f)
+                                    )
+                                ),
+                                CircleShape
+                            )
+                    )
+
                     DialCanvas(
                         progress = progress,
                         glowAlpha = glowAlpha,
                         modifier = Modifier.matchParentSize()
                     )
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .padding(38.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(Color(0xFF141414))
-                                .border(1.dp, BorderSoft, RoundedCornerShape(18.dp))
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        val density = LocalDensity.current
+                        val minSideDp = min(maxWidth.value, maxHeight.value)
+                        val segmentCount = timeText.count { it == ':' } + 1
+                        val timerSizeSp = with(density) {
+                            val multiplier = if (segmentCount == 3) 0.26f else 0.34f
+                            (minSideDp * multiplier).dp.toSp()
+                        }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            if (selectedActivity != null) {
+                                Box(
+                                    modifier = Modifier
+                                       // .widthIn(max = maxWidth * 0.9f)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(
+                                            Brush.verticalGradient(
+                                                listOf(Color(0xFF161616), Color(0xFF0D0D0D))
+                                            )
+                                        )
+                                        .border(
+                                            1.dp,
+                                            Brush.verticalGradient(
+                                                listOf(
+                                                    Color.White.copy(alpha = 0.08f),
+                                                    Color.Black.copy(alpha = 0.22f)
+                                                )
+                                            ),
+                                            RoundedCornerShape(18.dp)
+                                        )
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = selectedActivity.icon,
+                                            contentDescription = null,
+                                            tint = GoldSoft,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+
+                                        Text(
+                                            text = selectedActivity.name,
+                                            color = GoldSoft,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            }
+
                             Text(
-                                text = if (isStopwatch) "Stopwatch" else "Focus timer",
-                                color = GoldSoft,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium
+                                text = timeText,
+                                color = Gold,
+                                fontSize = timerSizeSp,
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.3.sp,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Visible,
+                                modifier = Modifier
                             )
                         }
-
-                        Text(
-                            text = timeText,
-                            color = Gold,
-                            fontSize = 46.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.5.sp
-                        )
-
-                        Text(
-                            text = statusText,
-                            color = TextSecondary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium
-                        )
                     }
                 }
 
                 Column(
-                    modifier = Modifier.weight(0.82f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.weight(0.85f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    InfoChip(
+                    InfoChipCompact3d(
                         label = if (isStopwatch) "Mode" else "Target",
                         value = if (isStopwatch) "Stopwatch" else "$targetMinutes min",
                         accent = Gold,
-                        icon = { TargetGlyph() }
+                        icon = { TargetGlyphCompact() }
                     )
 
-                    InfoChip(
+                    InfoChipCompact3d(
                         label = "Streak",
                         value = "$streakDays days",
                         accent = Gold,
-                        icon = { StreakGlyph() }
+                        icon = { StreakGlyphCompact() }
                     )
 
-                    InfoChip(
+                    InfoChipCompact3d(
                         label = "Status",
-                        value = when (heroState?.sessionState) {
-                            ActivitySessionState.RUNNING -> "Running"
-                            ActivitySessionState.PENDING -> "Paused"
-                            ActivitySessionState.COMPLETED_TODAY -> "Done today"
-                            else -> "Ready"
-                        },
+                        value = statusText,
                         accent = if (isCompleted) Success else Gold,
                         icon = { StatusGlyph(isCompleted = isCompleted) }
                     )
@@ -353,20 +395,236 @@ fun FocusTimerCard(
             )
         }
     }
+
+    if (showDetailsDialog) {
+        ActivityDetailsDialog(
+            activity = selectedActivity,
+            heroState = heroState,
+            onDismiss = { showDetailsDialog = false }
+        )
+    }
 }
 
 @Composable
-private fun MenuText(text: String) {
-    Text(
-        text = text,
-        color = TextPrimary,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.Medium
-    )
+private fun ActivityDetailsDialog(
+    activity: ActivityUiModel?,
+    heroState: ActivityDisplayState?,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 380.dp)
+                .shadow(
+                    elevation = 26.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    ambientColor = Gold.copy(alpha = 0.12f),
+                    spotColor = Color.Black
+                )
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color(0xFF141414), Color(0xFF0C0C0C))
+                    )
+                )
+                .border(
+                    1.dp,
+                    Brush.linearGradient(
+                        listOf(
+                            Gold.copy(alpha = 0.28f),
+                            Color.White.copy(alpha = 0.10f)
+                        )
+                    ),
+                    RoundedCornerShape(28.dp)
+                )
+                .padding(18.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF151515))
+                    .border(1.dp, BorderSoft, CircleShape)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onDismiss() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = "Close",
+                    tint = TextSecondary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(end = 40.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .shadow(
+                                elevation = 12.dp,
+                                shape = CircleShape,
+                                ambientColor = Gold.copy(alpha = 0.16f),
+                                spotColor = Color.Black
+                            )
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    listOf(
+                                        Gold.copy(alpha = 0.22f),
+                                        Color(0xFF181818)
+                                    )
+                                )
+                            )
+                            .border(1.dp, BorderSoft, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (activity != null) {
+                            Icon(
+                                imageVector = activity.icon,
+                                contentDescription = null,
+                                tint = Gold,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            TargetGlyphCompact()
+                        }
+                    }
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = activity?.name ?: heroState?.name ?: "No activity selected",
+                            color = TextPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        Text(
+                            text = "Activity details",
+                            color = TextMuted,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    DetailRow(
+                        label = "Mode",
+                        value = if (activity?.isStopwatch == true || heroState?.isStopwatch == true) {
+                            "Stopwatch"
+                        } else {
+                            "Timer"
+                        }
+                    )
+
+                    DetailRow(
+                        label = "Target",
+                        value = if (activity?.isStopwatch == true || heroState?.isStopwatch == true) {
+                            "No fixed target"
+                        } else {
+                            "${((heroState?.targetSeconds ?: activity?.targetSeconds ?: 0L) / 60L).toInt()} min"
+                        }
+                    )
+
+                    DetailRow(
+                        label = "Streak",
+                        value = "${heroState?.streakDays ?: activity?.streakDays ?: 0} days"
+                    )
+
+                    DetailRow(
+                        label = "Missed streak",
+                        value = if (activity?.continueOnMiss == true) {
+                            "Continue streak"
+                        } else {
+                            "Reset to zero"
+                        }
+                    )
+
+                    DetailRow(
+                        label = "Completion mark",
+                        value = when {
+                            activity?.completionStyle.equals("TIMEREND", true) -> "Auto-check on timer end"
+                            activity?.completionStyle.equals("AUTO", true) -> "Auto-check on timer end"
+                            else -> "Manual check"
+                        }
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(
+                            text = "Close",
+                            color = Gold,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
-private fun InfoChip(
+private fun DetailRow(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF151515), Color(0xFF101010))
+                )
+            )
+            .border(1.dp, BorderSoft, RoundedCornerShape(18.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = TextMuted,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Text(
+            text = value,
+            color = TextPrimary,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+@Composable
+private fun InfoChipCompact3d(
     label: String,
     value: String,
     accent: Color,
@@ -375,51 +633,67 @@ private fun InfoChip(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(22.dp),
+                ambientColor = accent.copy(alpha = 0.05f),
+                spotColor = Color.Black
+            )
             .clip(RoundedCornerShape(22.dp))
             .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF141414), Color(0xFF0E0E0E))
-                )
+                Brush.verticalGradient(listOf(Color(0xFF141414), Color(0xFF0C0C0C)))
             )
-            .border(1.dp, BorderSoft, RoundedCornerShape(22.dp))
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(Color.White.copy(alpha = 0.08f), Color.Black.copy(alpha = 0.20f))
+                ),
+                RoundedCornerShape(22.dp)
+            )
+            .padding(horizontal = 4.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(11.dp)
+       // horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(42.dp)
-                .shadow(
-                    elevation = 10.dp,
-                    shape = CircleShape,
-                    ambientColor = accent.copy(alpha = 0.12f),
-                    spotColor = Color.Black
-                )
+                .size(26.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF111111))
+                .background(
+                    Brush.radialGradient(listOf(accent.copy(alpha = 0.12f), Color(0xFF111111)))
+                )
                 .border(1.dp, BorderSoft, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             icon()
         }
+        Spacer(modifier = Modifier.width(6.dp))
 
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
             Text(
                 text = label,
                 color = TextMuted,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1
             )
+
             Text(
                 text = value,
                 color = TextPrimary,
-                fontSize = 15.sp,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,
-                lineHeight = 17.sp
+                lineHeight = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Visible,
+                softWrap = false
             )
         }
     }
 }
+
 
 @Composable
 private fun ControlBar(
@@ -435,14 +709,29 @@ private fun ControlBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
+            .shadow(
+                elevation = 14.dp,
+                shape = RoundedCornerShape(28.dp),
+                ambientColor = Gold.copy(alpha = 0.05f),
+                spotColor = Color.Black
+            )
+            .clip(RoundedCornerShape(28.dp))
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF111111), Color(0xFF090909))
+                    listOf(Color(0xFF101010), Color(0xFF080808))
                 )
             )
-            .border(1.dp, BorderSoft, RoundedCornerShape(26.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.08f),
+                        Color.Black.copy(alpha = 0.22f)
+                    )
+                ),
+                RoundedCornerShape(28.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         when {
@@ -532,10 +821,40 @@ private fun ActionButton(
     modifier: Modifier = Modifier,
     accent: Color = Gold
 ) {
-    TextButton(
-        onClick = onClick,
-        modifier = modifier,
-        contentPadding = PaddingValues(vertical = 10.dp)
+    Box(
+        modifier = modifier
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = accent.copy(alpha = 0.08f),
+                spotColor = Color.Black
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF161616),
+                        Color(0xFF0C0C0C)
+                    )
+                )
+            )
+            .border(
+                1.dp,
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.10f),
+                        Color.Black.copy(alpha = 0.25f)
+                    )
+                ),
+                RoundedCornerShape(20.dp)
+            )
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) { onClick() }
+            .padding(vertical = 12.dp, horizontal = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -543,29 +862,25 @@ private fun ActionButton(
         ) {
             Box(
                 modifier = Modifier
-                    .size(28.dp),
+                    .size(30.dp)
+                    .shadow(
+                        elevation = 6.dp,
+                        shape = CircleShape,
+                        ambientColor = accent.copy(alpha = 0.10f),
+                        spotColor = Color.Black
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                CompositionLocalAccent(accent, icon)
+                icon()
             }
+
             Text(
                 text = label,
-                color = TextSecondary,
+                color = if (accent == Success) Success else TextSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
         }
-    }
-}
-
-@Composable
-private fun CompositionLocalAccent(accent: Color, content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(Color.Transparent)
-    ) {
-        content()
     }
 }
 
@@ -579,7 +894,7 @@ private fun DialCanvas(
         val cx = size.width / 2f
         val cy = size.height / 2f
         val outerR = size.minDimension / 2f
-        val ringR = outerR * 0.78f
+        val ringR = outerR * 0.80f
         val ringRect = Rect(
             left = cx - ringR,
             top = cy - ringR,
@@ -589,7 +904,7 @@ private fun DialCanvas(
 
         drawCircle(
             brush = Brush.radialGradient(
-                listOf(Color(0xFF222222), Color(0xFF0B0B0B)),
+                listOf(Color(0xFF262626), Color(0xFF101010), Color(0xFF080808)),
                 center = Offset(cx, cy),
                 radius = outerR
             ),
@@ -597,17 +912,24 @@ private fun DialCanvas(
         )
 
         drawCircle(
-            color = Color.White.copy(alpha = 0.04f),
+            color = Color.White.copy(alpha = 0.05f),
             radius = outerR,
             style = Stroke(width = 1.5.dp.toPx())
+        )
+
+        drawCircle(
+            color = Color.Black.copy(alpha = 0.28f),
+            radius = outerR * 0.93f,
+            style = Stroke(width = 9.dp.toPx())
         )
 
         val tickCount = 60
         repeat(tickCount) { i ->
             val angle = Math.toRadians((i * 360.0 / tickCount) - 90.0)
             val isMajor = i % 5 == 0
-            val tickStart = ringR - if (isMajor) 14.dp.toPx() else 10.dp.toPx()
+            val tickStart = ringR - if (isMajor) 15.dp.toPx() else 10.dp.toPx()
             val tickEnd = ringR - 4.dp.toPx()
+
             drawLine(
                 color = if (isMajor) Gold.copy(alpha = 0.75f) else Color.White.copy(alpha = 0.12f),
                 start = Offset(
@@ -624,31 +946,30 @@ private fun DialCanvas(
         }
 
         drawArc(
-            color = Color.White.copy(alpha = 0.07f),
+            color = Color.White.copy(alpha = 0.08f),
             startAngle = -90f,
             sweepAngle = 360f,
             useCenter = false,
             topLeft = ringRect.topLeft,
             size = ringRect.size,
-            style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
+            style = Stroke(width = 11.dp.toPx(), cap = StrokeCap.Round)
         )
 
-        val sweep = (progress.coerceIn(0f, 1f) * 360f)
-
+        val sweep = progress.coerceIn(0f, 1f) * 360f
         if (sweep > 0f) {
             drawArc(
-                color = Gold.copy(alpha = glowAlpha * 0.23f),
+                color = Gold.copy(alpha = glowAlpha * 0.24f),
                 startAngle = -90f,
                 sweepAngle = sweep,
                 useCenter = false,
                 topLeft = ringRect.topLeft,
                 size = ringRect.size,
-                style = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = 24.dp.toPx(), cap = StrokeCap.Round)
             )
 
             drawArc(
                 brush = Brush.sweepGradient(
-                    colors = listOf(GoldDim, Gold, GoldSoft, Gold),
+                    colors = listOf(GoldDim, Gold, GoldSoft, Gold, GoldDim),
                     center = Offset(cx, cy)
                 ),
                 startAngle = -90f,
@@ -656,7 +977,7 @@ private fun DialCanvas(
                 useCenter = false,
                 topLeft = ringRect.topLeft,
                 size = ringRect.size,
-                style = Stroke(width = 9.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
             )
 
             val endAngle = Math.toRadians((sweep - 90f).toDouble())
@@ -664,7 +985,7 @@ private fun DialCanvas(
             val knobY = cy + sin(endAngle).toFloat() * ringR
 
             drawCircle(
-                color = Gold.copy(alpha = 0.18f),
+                color = Gold.copy(alpha = 0.20f),
                 radius = 18.dp.toPx(),
                 center = Offset(knobX, knobY)
             )
@@ -682,39 +1003,47 @@ private fun DialCanvas(
 
         drawCircle(
             brush = Brush.radialGradient(
-                listOf(Color(0xFF171717), Color(0xFF0C0C0C)),
+                listOf(Color(0xFF171717), Color(0xFF0B0B0B)),
                 center = Offset(cx, cy),
-                radius = outerR * 0.64f
+                radius = outerR * 0.63f
             ),
-            radius = outerR * 0.64f
+            radius = outerR * 0.63f
         )
 
         drawCircle(
             color = Color.White.copy(alpha = 0.035f),
-            radius = outerR * 0.64f,
+            radius = outerR * 0.63f,
             style = Stroke(width = 1.dp.toPx())
         )
     }
 }
 
 @Composable
-private fun TargetGlyph() {
-    Canvas(modifier = Modifier.size(22.dp)) {
+private fun TargetGlyphCompact() {
+    Canvas(modifier = Modifier.size(18.dp)) {
         val c = Offset(size.width / 2f, size.height / 2f)
         val r = size.minDimension / 2f
-        drawCircle(Gold, r, c, style = Stroke(2.dp.toPx()))
-        drawCircle(Gold, r * 0.58f, c, style = Stroke(1.6.dp.toPx()))
+        drawCircle(Gold, r, c, style = Stroke(1.8.dp.toPx()))
+        drawCircle(Gold, r * 0.58f, c, style = Stroke(1.4.dp.toPx()))
         drawCircle(Gold, r * 0.18f, c)
     }
 }
 
 @Composable
-private fun StreakGlyph() {
-    Canvas(modifier = Modifier.size(20.dp)) {
+private fun StreakGlyphCompact() {
+    Canvas(modifier = Modifier.size(17.dp)) {
         val path = Path().apply {
             moveTo(size.width * 0.48f, 0f)
-            cubicTo(size.width * 0.92f, size.height * 0.24f, size.width, size.height * 0.58f, size.width * 0.58f, size.height)
-            cubicTo(size.width * 0.12f, size.height * 0.84f, size.width * 0.10f, size.height * 0.42f, size.width * 0.48f, 0f)
+            cubicTo(
+                size.width * 0.92f, size.height * 0.24f,
+                size.width, size.height * 0.58f,
+                size.width * 0.58f, size.height
+            )
+            cubicTo(
+                size.width * 0.12f, size.height * 0.84f,
+                size.width * 0.10f, size.height * 0.42f,
+                size.width * 0.48f, 0f
+            )
         }
         drawPath(path, Gold)
     }
@@ -748,12 +1077,14 @@ private fun PauseGlyph() {
         val barWidth = size.width * 0.18f
         val top = size.height * 0.16f
         val height = size.height * 0.68f
+
         drawRoundRect(
             color = Gold,
             topLeft = Offset(size.width * 0.20f, top),
             size = Size(barWidth, height),
             cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
         )
+
         drawRoundRect(
             color = Gold,
             topLeft = Offset(size.width * 0.60f, top),
@@ -779,6 +1110,7 @@ private fun FinishGlyph() {
 private fun SwitchGlyph() {
     Canvas(modifier = Modifier.size(20.dp)) {
         val stroke = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round)
+
         drawArc(
             color = Gold,
             startAngle = 35f,
@@ -788,12 +1120,21 @@ private fun SwitchGlyph() {
             size = Size(size.width * 0.70f, size.height * 0.70f),
             style = stroke
         )
+
         val path = Path().apply {
             moveTo(size.width * 0.74f, size.height * 0.18f)
             lineTo(size.width * 0.92f, size.height * 0.20f)
             lineTo(size.width * 0.82f, size.height * 0.35f)
         }
-        drawPath(path, Gold, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(
+            path = path,
+            color = Gold,
+            style = Stroke(
+                2.dp.toPx(),
+                cap = StrokeCap.Round,
+                join = StrokeJoin.Round
+            )
+        )
     }
 }
 

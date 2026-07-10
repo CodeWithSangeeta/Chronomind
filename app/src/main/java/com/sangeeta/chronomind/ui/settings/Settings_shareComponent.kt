@@ -160,8 +160,9 @@ import com.sangeeta.chronomind.ui.theme.AuraTypography
             )
             Text(
                 text = item.subtitle,
+                fontSize = 12.sp,
                 style = AuraTypography.BodyMedium,
-                color = AuraColors.TextSecondary,
+                color = AuraColors.TextMuted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

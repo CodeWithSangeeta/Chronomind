@@ -51,7 +51,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.ArrowDropUp
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sangeeta.chronomind.R
 import com.sangeeta.chronomind.ui.create_activity.CompletionStyle
 import com.sangeeta.chronomind.ui.create_activity.StreakBehavior
 import com.sangeeta.chronomind.ui.theme.AuraColors
@@ -219,12 +223,94 @@ private fun SettingsScreenContent(
 
 
             item {
+                var isFaqExpanded by remember { mutableStateOf(false) }
+
+                var showAns1 by remember { mutableStateOf(false) }
+                var showAns2 by remember { mutableStateOf(false) }
+                var showAns3 by remember { mutableStateOf(false) }
+                var showAns4 by remember { mutableStateOf(false) }
+                val context = androidx.compose.ui.platform.LocalContext.current
+
                 SettingsSectionCard(title = "HELP") {
                     uiState.helpItems.forEachIndexed { index, item ->
-                        SettingsRow(
-                            item = item,
-                            onClick = { onRowClick(item.id) }
-                        )
+                        if (item.id == "faq") {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { isFaqExpanded = !isFaqExpanded }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                                ) {
+                                    RowIcon(icon = item.icon)
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(text = item.title, style = AuraTypography.TitleMedium, color = AuraColors.TextPrimary)
+                                        Text(text = item.subtitle, fontSize = 12.sp, style = AuraTypography.BodyMedium, color = AuraColors.TextMuted)
+                                    }
+                                    Icon(
+                                        imageVector = if (isFaqExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                                        contentDescription = null,
+                                        tint = AuraColors.TextSecondary
+                                    )
+                                }
+
+                                if (isFaqExpanded) {
+                                    Column(
+                                        modifier = Modifier
+                                            .padding(start = 54.dp, top = 8.dp, bottom = 8.dp)
+                                            .fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+
+                                            Column(modifier = Modifier.clickable { showAns1 = !showAns1 }) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(text = context.getString(R.string.faq_q1), fontWeight = FontWeight.SemiBold, color = AuraColors.YellowPrimary, style = AuraTypography.BodyMedium, modifier = Modifier.weight(1f))
+                                                    Icon(imageVector = if (showAns1) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown, contentDescription = null, tint = AuraColors.TextSecondary, modifier = Modifier.size(16.dp))
+                                                }
+                                                if (showAns1) Text(text = context.getString(R.string.faq_a1), color = AuraColors.TextSecondary, style = AuraTypography.BodySmall, modifier = Modifier.padding(top = 4.dp))
+                                            }
+
+                                            Spacer(modifier = Modifier.height(4.dp))
+
+                                            Column(modifier = Modifier.clickable { showAns2 = !showAns2 }) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(text = context.getString(R.string.faq_q2), fontWeight = FontWeight.SemiBold, color = AuraColors.YellowPrimary, style = AuraTypography.BodyMedium, modifier = Modifier.weight(1f))
+                                                    Icon(imageVector = if (showAns2) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown, contentDescription = null, tint = AuraColors.TextSecondary, modifier = Modifier.size(16.dp))
+                                                }
+                                                if (showAns2) Text(text = context.getString(R.string.faq_a2), color = AuraColors.TextSecondary, style = AuraTypography.BodySmall, modifier = Modifier.padding(top = 4.dp))
+                                            }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Column(modifier = Modifier.clickable { showAns3 = !showAns3 }) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(text = context.getString(R.string.faq_q3), fontWeight = FontWeight.SemiBold, color = AuraColors.YellowPrimary, style = AuraTypography.BodyMedium, modifier = Modifier.weight(1f))
+                                                    Icon(imageVector = if (showAns3) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown, contentDescription = null, tint = AuraColors.TextSecondary, modifier = Modifier.size(16.dp))
+                                                }
+                                                if (showAns3) Text(text = context.getString(R.string.faq_a3), color = AuraColors.TextSecondary, style = AuraTypography.BodySmall, modifier = Modifier.padding(top = 4.dp))
+                                            }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                            Column(modifier = Modifier.clickable { showAns4 = !showAns4 }) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(text = context.getString(R.string.faq_q4), fontWeight = FontWeight.SemiBold, color = AuraColors.YellowPrimary, style = AuraTypography.BodyMedium, modifier = Modifier.weight(1f))
+                                                    Icon(imageVector = if (showAns4) Icons.Rounded.ArrowDropUp else Icons.Rounded.ArrowDropDown, contentDescription = null, tint = AuraColors.TextSecondary, modifier = Modifier.size(16.dp))
+                                                }
+                                                if (showAns4) Text(text = context.getString(R.string.faq_a4), color = AuraColors.TextSecondary, style = AuraTypography.BodySmall, modifier = Modifier.padding(top = 4.dp))
+                                        }
+
+                                    }
+                                }
+                            }
+                        } else {
+                            SettingsRow(
+                                item = item,
+                                onClick = { onRowClick(item.id) }
+                            )
+                        }
+
                         if (index != uiState.helpItems.lastIndex) {
                             SettingsDivider()
                         }
