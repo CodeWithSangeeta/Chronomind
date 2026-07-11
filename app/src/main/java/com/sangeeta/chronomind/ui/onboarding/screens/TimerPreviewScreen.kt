@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -12,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -23,7 +23,14 @@ import com.sangeeta.chronomind.ui.onboarding.OnboardingScaffold
 import com.sangeeta.chronomind.ui.onboarding.PreviewStatus
 import com.sangeeta.chronomind.ui.theme.AuraColors
 import com.sangeeta.chronomind.ui.theme.AuraTypography
-
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.HourglassEmpty
+import androidx.compose.material3.Icon
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 
 private data class PreviewActivity(
     val name: String,
@@ -33,8 +40,8 @@ private data class PreviewActivity(
 )
 
 private val previewActivities = listOf(
-    PreviewActivity("Math",     "2:15", 0.72f, PreviewStatus.RUNNING),
-    PreviewActivity("Exercise", "0:35", 0.35f, PreviewStatus.PAUSED),
+    PreviewActivity("Exercise",     "2:15", 0.72f, PreviewStatus.RUNNING),
+    PreviewActivity("Creative work", "0:35", 0.35f, PreviewStatus.PAUSED),
     PreviewActivity("Reading",  "0:20", 0.20f, PreviewStatus.READY)
 )
 
@@ -58,7 +65,6 @@ fun TimerPreviewScreen(
     )
     LaunchedEffect(Unit) { visible = true }
 
-    // Animate the "running" timer to simulate live ticking
     val infiniteAnim  = rememberInfiniteTransition(label = "timerTick")
     val runningProgress by infiniteAnim.animateFloat(
         initialValue  = 0.65f,
@@ -112,6 +118,7 @@ fun TimerPreviewScreen(
 }
 
 
+
 @Composable
 private fun ActivityTimerCard(
     name: String,
@@ -120,34 +127,30 @@ private fun ActivityTimerCard(
     status: PreviewStatus,
     modifier: Modifier = Modifier
 ) {
-    val statusLabel = when (status) {
-        PreviewStatus.RUNNING -> "Running"
-        PreviewStatus.PAUSED  -> "Paused"
-        PreviewStatus.READY   -> "Ready"
+    val accent = when (name) {
+        "Exercise" -> Color(0xFF87A788)
+        "Creative work" -> Color(0xFFA67FA7)
+        else -> Color(0xFFD2B54E)
     }
-    val statusColor = when (status) {
-        PreviewStatus.RUNNING -> AuraColors.YellowPrimary
-        PreviewStatus.PAUSED  -> AuraColors.TextMuted
-        PreviewStatus.READY   -> AuraColors.TextMuted
-    }
+
+    val isTimer = (name == "Reading")
+
     val actionIcon = when (status) {
-        PreviewStatus.RUNNING -> "⏸"
-        PreviewStatus.PAUSED  -> "▶"
-        PreviewStatus.READY   -> "▶"
+        PreviewStatus.RUNNING -> Icons.Rounded.Pause
+        PreviewStatus.PAUSED -> Icons.Rounded.PlayArrow
+        PreviewStatus.READY -> Icons.Rounded.PlayArrow
+    }
+
+    val supportText = when (status) {
+        PreviewStatus.RUNNING -> null
+        PreviewStatus.PAUSED -> "Last attempt: Today"
+        PreviewStatus.READY -> "Last attempt: Yesterday"
     }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(
-                elevation    = if (status == PreviewStatus.RUNNING) 10.dp else 2.dp,
-                shape        = RoundedCornerShape(16.dp),
-                ambientColor = if (status == PreviewStatus.RUNNING) AuraColors.YellowGlow
-                else Color.Transparent,
-                spotColor    = if (status == PreviewStatus.RUNNING) AuraColors.YellowGlow
-                else Color.Transparent
-            )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -156,67 +159,138 @@ private fun ActivityTimerCard(
                     )
                 )
             )
-            .border(
-                width = if (status == PreviewStatus.RUNNING) 1.5.dp else 1.dp,
-                color =  AuraColors.CardBorderDefault,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .border(1.dp, AuraColors.CardBorderDefault, RoundedCornerShape(24.dp))
     ) {
-        Row(
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Timer circle
-            TimerCircle(
-                progress  = progress,
-                timerText = time,
-                sizeDp    = 64.dp
-            )
-
-            // Name + status badge
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text  = name,
-                    style = AuraTypography.TitleMedium,
-                    color = AuraColors.TextPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                // Status badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(statusColor.copy(alpha = 0.15f))
-                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(accent)
+                        .border(width = 1.dp, color = accent.copy(alpha = 0.5f), shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isTimer) Icons.Rounded.HourglassEmpty else Icons.Rounded.Bolt,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text  = statusLabel,
-                        style = AuraTypography.BodySmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = statusColor
+                        text = name,
+                        style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = AuraColors.TextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Text(
+                        text = time,
+                        style = AuraTypography.TitleMedium.copy(fontWeight = FontWeight.Medium),
+                        color = AuraColors.TextPrimary,
+                        maxLines = 1
+                    )
+
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ActivityMetaBadge(
+                            label = if (isTimer) "Timer" else "Stopwatch",
+                            textColor = accent,
+                            backgroundColor = accent.copy(alpha = 0.10f),
+                            borderColor = accent.copy(alpha = 0.18f),
+                            leadingIcon = if (isTimer) Icons.Rounded.HourglassEmpty else Icons.Rounded.Bolt
+                        )
+                    }
+
+                    if (supportText != null) {
+                        Text(
+                            text = supportText,
+                            style = AuraTypography.BodySmall,
+                            color = AuraColors.TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(AuraColors.SurfaceCardLight)
+                        .border(1.dp, AuraColors.CardBorderDefault, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = actionIcon,
+                        contentDescription = null,
+                        tint = AuraColors.YellowPrimary,
+                        modifier = Modifier.size(26.dp)
                     )
                 }
             }
 
-            // Action button
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(AuraColors.SurfaceCard)
-                    .border(
-                        width = 1.dp,
-                        color = AuraColors.CardBorderDefault,
-                        shape = RoundedCornerShape(50.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text  = actionIcon,
-                    style = AuraTypography.BodyMedium,
-                    color = AuraColors.TextPrimary
-                )
+
+            if (isTimer) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${(progress * 100).toInt()}%",
+                            style = AuraTypography.BodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = AuraColors.TextSecondary,
+                            fontSize = 10.sp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Progress",
+                            style = AuraTypography.BodySmall,
+                            color = AuraColors.TextMuted,
+                            fontSize = 10.sp
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(AuraColors.TimerTrack)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(accent)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

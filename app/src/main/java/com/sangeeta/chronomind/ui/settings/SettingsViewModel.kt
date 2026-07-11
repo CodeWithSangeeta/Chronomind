@@ -177,7 +177,7 @@ class SettingsViewModel @Inject constructor(
         ),
             SettingsRowUiModel(
                 id = "support_portal",
-                title = "Report an issue / Feedback",
+                title = "Report an Feedback",
                 subtitle = "Bugs, feature requests, and support",
                 icon = Icons.Rounded.Feedback,
                 isExternal = true
@@ -190,7 +190,6 @@ class SettingsViewModel @Inject constructor(
             title = "Privacy policy",
             subtitle = "How your data is handled",
             icon = Icons.Rounded.Policy,
-            value = context.getString(R.string.url_privacy_policy),
             isExternal = true
         ),
         SettingsRowUiModel(
@@ -198,7 +197,6 @@ class SettingsViewModel @Inject constructor(
             title = "Terms of service",
             subtitle = "Rules and usage guidelines",
             icon = Icons.Rounded.Gavel,
-            value = context.getString(R.string.url_terms_of_service),
             isExternal = true
         ),
         SettingsRowUiModel(

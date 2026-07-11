@@ -62,8 +62,9 @@ enum class CheckInStyle(
 ) {
     MANUAL(
         Icons.Rounded.TaskAlt,
+        "Manual check-in",
         "I’ll mark my day complete",
-        "Manual check-in"
+
     ),
     AUTO_CHECK(
         Icons.Rounded.Notifications,

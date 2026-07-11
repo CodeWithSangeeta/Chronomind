@@ -26,6 +26,7 @@ import com.sangeeta.chronomind.ui.history.HistoryScreen
 import com.sangeeta.chronomind.ui.home.HomeScreen
 import com.sangeeta.chronomind.ui.insights.InsightsScreen
 import com.sangeeta.chronomind.ui.settings.SettingsScreen
+import kotlin.jvm.java
 
 
 private const val DURATION_ENTER = 260
@@ -173,6 +174,7 @@ fun MainNavHost(
                             }
                             context.startActivity(intent)
                         }
+
                         "terms" -> {
                             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
                                 data = android.net.Uri.parse(context.getString(R.string.url_terms_of_service))
@@ -200,6 +202,7 @@ fun MainNavHost(
                             }
                             context.startActivity(intent)
                         }
+
                         "support_portal" -> {
                             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
                                 data = android.net.Uri.parse(context.getString(R.string.url_support_portal))
@@ -210,13 +213,15 @@ fun MainNavHost(
                                 android.widget.Toast.makeText(context, "Cannot open web browser.", android.widget.Toast.LENGTH_SHORT).show()
                             }
                         }
-                      //  "faq" -> {}
+
                         "licenses" -> {
-                            // Launch a standard system viewer or show a hosted list of third-party attributions
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                data = android.net.Uri.parse("https://github.com/CodeWithSangeeta/chronomind-privacy/blob/main/LICENSES.txt")
+                            runCatching {
+                                // Launches Google's official, pre-built native license menu activity
+                                val intent = android.content.Intent(context, com.google.android.gms.oss.licenses.OssLicensesMenuActivity::class.java)
+                                context.startActivity(intent)
+                            }.onFailure {
+                                android.widget.Toast.makeText(context, "Unable to load open-source licenses", android.widget.Toast.LENGTH_SHORT).show()
                             }
-                            context.startActivity(intent)
                         }
                         else -> { }
                     }

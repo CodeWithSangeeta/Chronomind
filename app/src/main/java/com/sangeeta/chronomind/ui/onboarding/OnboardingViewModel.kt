@@ -17,13 +17,11 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
-
 sealed class OnboardingNavEvent {
     data object NextStep         : OnboardingNavEvent()
     data object PreviousStep     : OnboardingNavEvent()
     data object NavigateToMain   : OnboardingNavEvent()
 }
-
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
@@ -37,7 +35,6 @@ class OnboardingViewModel @Inject constructor(
     private val _navEvent = Channel<OnboardingNavEvent>(Channel.BUFFERED)
     val navEvent = _navEvent.receiveAsFlow()
 
-
     fun nextStep() {
         _state.update { it.copy(currentStep = it.currentStep + 1) }
         viewModelScope.launch { _navEvent.send(OnboardingNavEvent.NextStep) }
@@ -50,13 +47,17 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    // FIX: Enforce single selection by clearing the set before adding the new choice
     fun toggleFocusArea(area: FocusArea) {
         _state.update { current ->
-            val updated = current.selectedFocusAreas.toMutableSet()
-            if (area in updated) updated.remove(area) else updated.add(area)
+            val updated = mutableSetOf<FocusArea>()
+            if (area !in current.selectedFocusAreas) {
+                updated.add(area)
+            }
             current.copy(selectedFocusAreas = updated)
         }
     }
+
     fun toggleAccountability(type: AccountabilityType) {
         _state.update { current ->
             val updated = current.selectedAccountabilityTypes.toMutableSet()
@@ -85,28 +86,26 @@ class OnboardingViewModel @Inject constructor(
     fun getStreakMissLabel(): String =
         _state.value.selectedStreakMissChoice?.title ?: "Not selected"
 
-   fun finishOnboarding() {
+    fun finishOnboarding() {
         viewModelScope.launch {
             val current = _state.value
-            
-            // Corrected method name from saveOnboardingResult to completeOnboarding
+
             onboardingRepo.completeOnboarding(
                 name           = "",
-                accountability = current.selectedAccountabilityTypes
-                    .map { it.name }
-                    .joinToString(","),
-                checkIn        = current.selectedCheckInStyle?.name    ?: "",
+                accountability = current.selectedAccountabilityTypes.map { it.name }.joinToString(","),
+                checkIn        = current.selectedCheckInStyle?.name ?: "",
                 streakMiss     = current.selectedStreakMissChoice?.name ?: ""
             )
 
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
             val continueStreak = current.selectedStreakMissChoice == StreakMissChoice.CONTINUE
 
+            // FIX: Map activity targets strictly to standard STOPWATCH mode configurations
             val activities = current.selectedFocusAreas
                 .mapIndexed { index, area ->
                     ActivityEntity(
                         name = area.label,
-                        targetMinutes = defaultTargetMinutes(area),
+                        targetMinutes = 0, // No countdown limits needed
                         elapsedSeconds = 0L,
                         isRunning = false,
                         streakDays = 0,
@@ -114,8 +113,8 @@ class OnboardingViewModel @Inject constructor(
                         continueStreakOnMiss = continueStreak,
                         orderIndex = index,
                         icon = area.icon,
-                        targetType = "TIMER",
-                        completionStyle = if (current.selectedCheckInStyle == CheckInStyle.AUTO_CHECK) "AUTO_CHECK" else "MANUAL_CHECK"
+                        targetType = "STOPWATCH",
+                        completionStyle = "MANUAL"
                     )
                 }
 
@@ -126,17 +125,5 @@ class OnboardingViewModel @Inject constructor(
             _state.update { it.copy(isFinished = true) }
             _navEvent.send(OnboardingNavEvent.NavigateToMain)
         }
-    }
-
-
-    private fun defaultTargetMinutes(area: FocusArea): Int = when (area) {
-        FocusArea.STUDY      -> 120
-        FocusArea.EXERCISE   -> 45
-        FocusArea.READING    -> 30
-        FocusArea.WORK       -> 180
-        FocusArea.MEDITATION -> 20
-        FocusArea.CREATIVE   -> 60
-        FocusArea.GROWTH     -> 30
-        FocusArea.OTHER      -> 60
     }
 }

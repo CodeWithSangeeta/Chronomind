@@ -38,7 +38,6 @@ fun AccountabilityScreen(
         buttonText = "Continue",
         onButtonClick = onContinue,
         buttonEnabled = selectedTypes.isNotEmpty(),
-        footerText = "You can change this later in settings.",
         currentStep = currentStep,
         totalSteps = totalSteps,
         topContent = {
