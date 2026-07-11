@@ -47,7 +47,6 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
-    // FIX: Enforce single selection by clearing the set before adding the new choice
     fun toggleFocusArea(area: FocusArea) {
         _state.update { current ->
             val updated = mutableSetOf<FocusArea>()
@@ -100,12 +99,11 @@ class OnboardingViewModel @Inject constructor(
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
             val continueStreak = current.selectedStreakMissChoice == StreakMissChoice.CONTINUE
 
-            // FIX: Map activity targets strictly to standard STOPWATCH mode configurations
             val activities = current.selectedFocusAreas
                 .mapIndexed { index, area ->
                     ActivityEntity(
                         name = area.label,
-                        targetMinutes = 0, // No countdown limits needed
+                        targetMinutes = 0,
                         elapsedSeconds = 0L,
                         isRunning = false,
                         streakDays = 0,

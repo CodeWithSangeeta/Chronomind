@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 
@@ -38,11 +37,6 @@ data class HomeQuickAction(
                 id = "insights",
                 title = "Insights",
                 icon = Icons.Rounded.BarChart
-            ),
-            HomeQuickAction(
-                id = "widget_setup",
-                title = "Widget Setup",
-                icon = Icons.Rounded.Widgets
             )
         )
     }

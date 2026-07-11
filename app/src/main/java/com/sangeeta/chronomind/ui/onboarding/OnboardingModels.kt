@@ -15,7 +15,6 @@ import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.TrendingUp
-import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -49,10 +48,10 @@ enum class AccountabilityType(
         Icons.Rounded.BarChart,
         "Progress tracking"
     ),
-    REMINDERS(
-        Icons.Rounded.Widgets,
-        "Home screen widget"
-    )
+//    REMINDERS(
+//        Icons.Rounded.Widgets,
+//        "Home screen widget"
+//    )
 }
 
 enum class CheckInStyle(

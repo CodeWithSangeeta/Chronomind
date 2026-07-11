@@ -36,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -55,8 +54,7 @@ fun HomeScreen(
     onNavigateToAllActivities: () -> Unit,
     onNavigateToCreateActivity: () -> Unit,
     onNavigateToHistory: () -> Unit,
-    onNavigateToInsights: () -> Unit,
-    onNavigateToWidgetSetup: () -> Unit
+    onNavigateToInsights: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val heroDisplayState by viewModel.heroDisplayState.collectAsStateWithLifecycle()
@@ -115,10 +113,9 @@ fun HomeScreen(
         onNavigateToAllActivities = onNavigateToAllActivities,
         onQuickActionClick = { action ->
             when (action.id) {
-                "newactivity" -> onNavigateToCreateActivity()
+                "new_activity" -> onNavigateToCreateActivity()
                 "history" -> onNavigateToHistory()
                 "insights" -> onNavigateToInsights()
-                "widgetsetup" -> onNavigateToWidgetSetup()
             }
         },
         onStartFocus = viewModel::startFocus,
@@ -180,8 +177,16 @@ private fun HomeScreenContent(
                             onStartFocus = onStartFocus,
                             onPause = onPause,
                             onFinish = onFinish,
-                            onSwitch = onNavigateToAllActivities
+                            onSwitch = onNavigateToAllActivities,
+                            onNoActivitySelected = onNavigateToAllActivities // guides user to pick/create one
                         )
+
+                        if (showFinishDialog) {
+                            FinishSessionDialog(
+                                onConfirm = onConfirmFinish,
+                                onDismiss = onCancelFinish
+                            )
+                        }
                     }
                 }
             }
@@ -262,13 +267,13 @@ private fun HomeHeader(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+           horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Image(
                 painter = painterResource(R.drawable.app_logo),
                 contentDescription = null,
-                modifier = Modifier.size(34.dp),
-                contentScale = ContentScale.Fit
+                modifier = Modifier
+                    .size(32.dp)
             )
 
             Text(

@@ -22,6 +22,7 @@ import javax.inject.Inject
 
 sealed interface SettingsEvent {
     data object RequestNotificationPermission : SettingsEvent
+    data class ShowSnackbar(val message: String) : SettingsEvent
 }
 
 @HiltViewModel
@@ -132,13 +133,16 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearAllData() = viewModelScope.launch {
-        activityRepository.clearAll()
-        localUiState.update { it.copy(showClearDataConfirm = false) }
+        localUiState.update { it.copy(isClearingData = true) }
+        activityRepository.clearAllAppActivitiesAndSessions()
+        localUiState.update { it.copy(showClearDataConfirm = false, isClearingData = false) }
+        _events.send(SettingsEvent.ShowSnackbar("All activities and history cleared"))
     }
 
     fun resetOnboarding(onDone: () -> Unit) = viewModelScope.launch {
         onboardingRepository.resetOnboarding()
         localUiState.update { it.copy(showResetConfirm = false) }
+        _events.send(SettingsEvent.ShowSnackbar("Onboarding has been reset"))
         onDone()
     }
 

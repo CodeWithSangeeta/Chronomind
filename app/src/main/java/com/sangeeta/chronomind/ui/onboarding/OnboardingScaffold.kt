@@ -32,7 +32,7 @@ fun OnboardingScaffold(
     buttonEnabled: Boolean = true,
     showProgress: Boolean = true,
     currentStep: Int = 0,
-    totalSteps: Int = 8,
+    totalSteps: Int = 7,
     footerText: String? = null,
     footerContent: @Composable (() -> Unit)? = null,
     topContent: @Composable (() -> Unit)? = null,

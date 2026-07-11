@@ -105,8 +105,7 @@ fun MainNavHost(
                 onNavigateToAllActivities  = { navController.navigate(ChronoRoutes.AllActivities.route) },
                 onNavigateToCreateActivity = { navController.navigate(ChronoRoutes.CreateEditActivity.createRoute()) },
                 onNavigateToHistory        = { navController.navigate(ChronoRoutes.History.route) },
-                onNavigateToInsights       = { navController.navigate(ChronoRoutes.Insights.route) },
-                onNavigateToWidgetSetup    = { navController.navigate(ChronoRoutes.WidgetSetup.route) },
+                onNavigateToInsights       = { navController.navigate(ChronoRoutes.Insights.route) }
             )
         }
 
@@ -216,7 +215,6 @@ fun MainNavHost(
 
                         "licenses" -> {
                             runCatching {
-                                // Launches Google's official, pre-built native license menu activity
                                 val intent = android.content.Intent(context, com.google.android.gms.oss.licenses.OssLicensesMenuActivity::class.java)
                                 context.startActivity(intent)
                             }.onFailure {
@@ -232,8 +230,6 @@ fun MainNavHost(
             )
         }
 
-        composable(route = ChronoRoutes.WidgetSetup.route) {
-            // TODO: WidgetSetupScreen
-        }
+
     }
 }

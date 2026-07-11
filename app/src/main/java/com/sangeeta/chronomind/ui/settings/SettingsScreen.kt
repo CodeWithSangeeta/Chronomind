@@ -1,18 +1,14 @@
 package com.sangeeta.chronomind.ui.settings
 
 import android.Manifest
-import android.app.Activity
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,46 +23,28 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.RestartAlt
-import androidx.compose.material.icons.rounded.TrackChanges
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.ArrowDropUp
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sangeeta.chronomind.R
@@ -83,6 +61,7 @@ fun SettingsScreen(
     onResetOnboarding: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -100,11 +79,14 @@ fun SettingsScreen(
                         viewModel.onNotificationPermissionResult(true)
                     }
                 }
+                is SettingsEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
             }
         }
     }
 
-
+    Box(modifier = Modifier.fillMaxSize()) {
     SettingsScreenContent(
         uiState = uiState,
         onBackClick = onBackClick,
@@ -121,6 +103,14 @@ fun SettingsScreen(
         onConfirmClearData = viewModel::clearAllData,
         onConfirmReset = { viewModel.resetOnboarding(onResetOnboarding) }
     )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
+    }
 }
 
 
@@ -191,7 +181,8 @@ private fun SettingsScreenContent(
             item {
                 SettingsSectionCard(
                     title = "FOCUS",
-                    footerText = "Defaults apply to new activities. You can override them per activity."                ) {
+                    footerText = "Defaults apply to new activities. You can override them per activity."
+                ) {
                     SettingsDropdownRow(
                         icon = Icons.Rounded.RestartAlt,
                         label = "Streak on missed day",
@@ -348,6 +339,7 @@ private fun SettingsScreenContent(
 
             item {
                 DangerZoneCard(
+                    isClearingData = uiState.isClearingData,
                     onClearDataClick = { onShowClearDataConfirm(true) },
                     onResetOnboardingClick = { onShowResetConfirm(true) }
                 )

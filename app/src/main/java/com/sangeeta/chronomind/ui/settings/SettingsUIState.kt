@@ -33,6 +33,7 @@ data class SettingsUiState(
     val trustItems: List<SettingsRowUiModel> = emptyList(),
     val aboutItems: List<SettingsRowUiModel> = emptyList(),
     val showClearDataConfirm: Boolean = false,
-    val showResetConfirm: Boolean = false
+    val showResetConfirm: Boolean = false,
+    val isClearingData: Boolean = false,
 )
 

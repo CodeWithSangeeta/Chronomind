@@ -52,7 +52,7 @@ fun OnboardingNavHost(
             onToggleArea = {area -> viewModel.toggleFocusArea(area)},
             onContinue = { viewModel.nextStep() },
             currentStep = 0,
-            totalSteps = 7
+            totalSteps = 6
         )
 
         3 -> AccountabilityScreen(
@@ -60,7 +60,7 @@ fun OnboardingNavHost(
             onToggleType = {type -> viewModel.toggleAccountability(type)},
             onContinue = { viewModel.nextStep() },
             currentStep = 1,
-            totalSteps = 7
+            totalSteps = 6
         )
 
         4 -> CheckInStyleScreen(
@@ -68,7 +68,7 @@ fun OnboardingNavHost(
             onSelect = { style -> viewModel.selectCheckInStyle(style) },
             onContinue = { viewModel.nextStep() },
             currentStep = 2,
-            totalSteps = 7
+            totalSteps = 6
         )
 
         5 -> StreakMissScreen(
@@ -76,29 +76,24 @@ fun OnboardingNavHost(
             onSelect = { choice -> viewModel.selectStreakMissChoice(choice)},
             onContinue = { viewModel.nextStep() },
             currentStep = 3,
-            totalSteps = 7
+            totalSteps = 6
         )
 
         6 -> TimerPreviewScreen(
             onContinue = { viewModel.nextStep() },
             currentStep = 4,
-            totalSteps = 7
+            totalSteps = 6
         )
 
-        7 -> WidgetPreviewScreen(
-            onContinue = { viewModel.nextStep() },
-            currentStep = 5,
-            totalSteps = 7
-        )
 
-        8 -> SpaceSummaryScreen(
+        7 -> SpaceSummaryScreen(
             focusAreas = viewModel.getFocusAreaLabels(),
             accountabilityLabel = viewModel.getAccountabilityLabels(),
             checkInLabel = viewModel.getCheckInLabel(),
             streakMissLabel = viewModel.getStreakMissLabel(),
             onCreateSpace = { viewModel.finishOnboarding() },
-            currentStep = 6,
-            totalSteps = 7
+            currentStep = 5,
+            totalSteps = 6
         )
 
         else -> IntroScreen(

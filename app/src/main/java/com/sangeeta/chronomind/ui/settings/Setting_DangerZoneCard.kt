@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ import com.sangeeta.chronomind.ui.theme.AuraTypography
 
 @Composable
 fun DangerZoneCard(
+    isClearingData: Boolean = false,
     onClearDataClick: () -> Unit,
     onResetOnboardingClick: () -> Unit
 ) {
@@ -54,9 +56,12 @@ fun DangerZoneCard(
             color = AuraColors.TextSecondary
         )
 
+
         DangerButton(
             icon = Icons.Rounded.DeleteForever,
-            label = "Clear all activities",
+            label = if (isClearingData) "Clearing..." else "Clear all activities",
+            enabled = !isClearingData,
+            showLoading = isClearingData,
             onClick = onClearDataClick
         )
 
@@ -72,6 +77,8 @@ fun DangerZoneCard(
 private fun DangerButton(
     icon: ImageVector,
     label: String,
+    enabled: Boolean = true,
+    showLoading: Boolean = false,
     onClick: () -> Unit
 ) {
     Row(
@@ -80,39 +87,27 @@ private fun DangerButton(
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xFF221212))
             .border(1.dp, Color(0xFFE35D5D).copy(alpha = 0.22f), RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF311818)),
+            modifier = Modifier.size(38.dp).clip(CircleShape).background(Color(0xFF311818)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color(0xFFE35D5D),
-                modifier = Modifier.size(18.dp)
-            )
+            if (showLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = Color(0xFFE35D5D)
+                )
+            } else {
+                Icon(imageVector = icon, contentDescription = null, tint = Color(0xFFE35D5D), modifier = Modifier.size(18.dp))
+            }
         }
-
-        Text(
-            text = label,
-            style = AuraTypography.TitleMedium,
-            color = Color(0xFFFFD2D2),
-            modifier = Modifier.weight(1f)
-        )
-
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            tint = Color(0xFFE35D5D),
-            modifier = Modifier.size(18.dp)
-        )
+        Text(text = label, style = AuraTypography.TitleMedium, color = Color(0xFFFFD2D2), modifier = Modifier.weight(1f))
+        Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = Color(0xFFE35D5D), modifier = Modifier.size(18.dp))
     }
 }
 
