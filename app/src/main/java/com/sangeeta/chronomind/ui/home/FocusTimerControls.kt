@@ -69,8 +69,6 @@ internal fun ControlBar(
     ) {
         when {
             heroState == null -> {
-                // No activity exists at all — starting should prompt the
-                // user to create/select one rather than silently no-op.
                 ActionButton(
                     label = "Start",
                     onClick = onNoActivitySelected,

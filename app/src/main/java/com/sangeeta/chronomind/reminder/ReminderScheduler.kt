@@ -4,12 +4,8 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 object ReminderScheduler {
 
@@ -33,21 +29,7 @@ object ReminderScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                try {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerAt,
-                        pendingIntent
-                    )
-                    return
-                } catch (e: SecurityException) {
-                    Log.e("ChronoMindReminder", "Exact alarm permission was denied at runtime fallback applied", e)
-                }
-            }
-        }
-
+        // Safely uses inexact alarms allowed while idle (safe for Play Store compliance)
         alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerAt,
@@ -69,8 +51,8 @@ object ReminderScheduler {
     }
 
     private fun nextTriggerMillis(timeString: String): Long {
-        val sdf = SimpleDateFormat("hh:mm a", Locale.US)
-        val parsed = runCatching { sdf.parse(timeString) }.getOrNull() ?: Date()
+        val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.US)
+        val parsed = runCatching { sdf.parse(timeString) }.getOrNull() ?: java.util.Date()
 
         val now = Calendar.getInstance()
         val parsedCal = Calendar.getInstance().apply { time = parsed }
