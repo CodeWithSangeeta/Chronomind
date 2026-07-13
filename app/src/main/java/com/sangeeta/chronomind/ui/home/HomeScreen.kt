@@ -178,7 +178,7 @@ private fun HomeScreenContent(
                             onPause = onPause,
                             onFinish = onFinish,
                             onSwitch = onNavigateToAllActivities,
-                            onNoActivitySelected = onNavigateToAllActivities // guides user to pick/create one
+                            onNoActivitySelected = onNavigateToAllActivities
                         )
 
                         if (showFinishDialog) {
@@ -228,27 +228,6 @@ private fun HomeScreenContent(
 
             item { Spacer(modifier = Modifier.height(6.dp)) }
         }
-    }
-
-
-    if (showFinishDialog) {
-        AlertDialog(
-            onDismissRequest = onCancelFinish,
-            title = { Text("Mark as complete?") },
-            text = {
-                Text("This will finish today's session. You won't be able to run this activity again today.")
-            },
-            confirmButton = {
-                TextButton(onClick = onConfirmFinish) {
-                    Text("Mark Complete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = onCancelFinish) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 

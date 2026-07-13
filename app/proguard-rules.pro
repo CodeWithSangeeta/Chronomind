@@ -21,6 +21,3 @@
 #-renamesourcefileattribute SourceFile
 
 
--keep class com.google.android.gms.oss.licenses.** { *; }
--dontwarn com.google.android.gms.oss.licenses.**
-

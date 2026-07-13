@@ -6,6 +6,7 @@ sealed class ChronoRoutes(val route: String) {
     data object History : ChronoRoutes("history")
     data object Insights : ChronoRoutes("insights")
     data object Settings : ChronoRoutes("settings")
+    data object OpenSourceLicenses : ChronoRoutes("open_source_licenses")
 
     data object CreateEditActivity : ChronoRoutes("create_edit_activity/{activityId}") {
         const val ARG = "activityId"

@@ -25,6 +25,7 @@ import com.sangeeta.chronomind.ui.create_activity.CreateEditActivityScreen
 import com.sangeeta.chronomind.ui.history.HistoryScreen
 import com.sangeeta.chronomind.ui.home.HomeScreen
 import com.sangeeta.chronomind.ui.insights.InsightsScreen
+import com.sangeeta.chronomind.ui.settings.OpenSourceLicensesScreen
 import com.sangeeta.chronomind.ui.settings.SettingsScreen
 import kotlin.jvm.java
 
@@ -214,12 +215,7 @@ fun MainNavHost(
                         }
 
                         "licenses" -> {
-                            runCatching {
-                                val intent = android.content.Intent(context, com.google.android.gms.oss.licenses.OssLicensesMenuActivity::class.java)
-                                context.startActivity(intent)
-                            }.onFailure {
-                                android.widget.Toast.makeText(context, "Unable to load open-source licenses", android.widget.Toast.LENGTH_SHORT).show()
-                            }
+                            navController.navigate(ChronoRoutes.OpenSourceLicenses.route)
                         }
                         else -> { }
                     }
@@ -227,6 +223,12 @@ fun MainNavHost(
                 onResetOnboarding = {
                     navController.popBackStack()
                 }
+            )
+        }
+
+        composable(route = ChronoRoutes.OpenSourceLicenses.route) {
+            OpenSourceLicensesScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 
