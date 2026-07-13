@@ -5,7 +5,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sangeeta.chronomind.R
 import com.sangeeta.chronomind.reminder.ReminderScheduler
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
