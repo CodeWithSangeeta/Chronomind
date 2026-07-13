@@ -28,7 +28,6 @@ data class SettingsUiState(
     val defaultCompletionStyle: CompletionStyle = CompletionStyle.MANUAL_CHECK,
     val defaultStreakOnMiss: StreakBehavior = StreakBehavior.CONTINUE_STREAK,
 
-    val widgetItems: List<SettingsRowUiModel> = emptyList(),
     val helpItems: List<SettingsRowUiModel> = emptyList(),
     val trustItems: List<SettingsRowUiModel> = emptyList(),
     val aboutItems: List<SettingsRowUiModel> = emptyList(),

@@ -5,10 +5,7 @@
     <string name="url_privacy_policy">https://sites.google.com/view/chronomind-app-privacy-policy</string>
     <string name="url_terms_of_service">https://sites.google.com/view/chronomind-term-and-conditions</string>
 
-    <string name="url_play_store_listing">market://details?id=com.sangeeta.chronomind</string>
-    <string name="url_play_store_fallback">https://play.google.com/store/apps/details?id=com.sangeeta.chronomind</string>
-    <string name="url_developer_portfolio">https://github.com/CodeWithSangeeta</string>
-
+    <string name="url_developer_portfolio">https://www.linkedin.com/in/sangeeta-yadav-23473b334/</string>
 
     <string name="url_support_portal">https://forms.gle/1nRb2PcRTqURtnKw8</string>
 

@@ -202,13 +202,6 @@ class SettingsViewModel @Inject constructor(
             subtitle = "Rules and usage guidelines",
             icon = Icons.Rounded.Gavel,
             isExternal = true
-        ),
-        SettingsRowUiModel(
-            id = "rateapp",
-            title = "Rate app",
-            subtitle = "Support ChronoMind on Play Store",
-            icon = Icons.Rounded.Star,
-            isExternal = true
         )
     )
 
@@ -222,17 +215,17 @@ class SettingsViewModel @Inject constructor(
             isValueOnly = true
         ),
         SettingsRowUiModel(
-            id = "developer",
-            title = "Developer",
-            subtitle = "Built by Sangeeta Yadav",
-            icon = Icons.Rounded.Code,
-            isExternal = true
-        ),
-        SettingsRowUiModel(
             id = "licenses",
             title = "Open source licenses",
             subtitle = "Third-party libraries and licenses",
             icon = Icons.Rounded.Article
-        )
+        ),
+        SettingsRowUiModel(
+        id = "developer",
+        title = "Developer",
+        subtitle = "Built by Sangeeta Yadav",
+        icon = Icons.Rounded.Code,
+        isExternal = true
+    ),
     )
 }

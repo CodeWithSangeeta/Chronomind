@@ -249,7 +249,7 @@ private fun HomeHeader(
            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Image(
-                painter = painterResource(R.drawable.app_logo),
+                painter = painterResource(R.drawable.chronomind_app_logo),
                 contentDescription = null,
                 modifier = Modifier
                     .size(32.dp)

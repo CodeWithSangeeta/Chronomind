@@ -27,7 +27,6 @@ import com.sangeeta.chronomind.ui.home.HomeScreen
 import com.sangeeta.chronomind.ui.insights.InsightsScreen
 import com.sangeeta.chronomind.ui.settings.OpenSourceLicensesScreen
 import com.sangeeta.chronomind.ui.settings.SettingsScreen
-import kotlin.jvm.java
 
 
 private const val DURATION_ENTER = 260
@@ -181,21 +180,7 @@ fun MainNavHost(
                             }
                             context.startActivity(intent)
                         }
-                        "rateapp" -> {
-                            // Try opening deep-link straight into Play Store app container first
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                data = android.net.Uri.parse(context.getString(R.string.url_play_store_listing))
-                            }
-                            runCatching {
-                                context.startActivity(intent)
-                            }.onFailure {
-                                // Fallback safely to web browser view if running on emulator/no store app present
-                                val webIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                    data = android.net.Uri.parse(context.getString(R.string.url_play_store_fallback))
-                                }
-                                context.startActivity(webIntent)
-                            }
-                        }
+
                         "developer" -> {
                             val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
                                 data = android.net.Uri.parse(context.getString(R.string.url_developer_portfolio))

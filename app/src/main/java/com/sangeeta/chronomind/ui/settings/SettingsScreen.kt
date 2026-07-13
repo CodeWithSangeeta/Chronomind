@@ -310,7 +310,7 @@ private fun SettingsScreenContent(
             }
 
             item {
-                SettingsSectionCard(title = "PLAY STORE TRUST") {
+                SettingsSectionCard(title = "LEGAL & SUPPORT") {
                     uiState.trustItems.forEachIndexed { index, item ->
                         SettingsRow(
                             item = item,
