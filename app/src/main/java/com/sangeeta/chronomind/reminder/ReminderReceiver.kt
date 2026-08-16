@@ -38,7 +38,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 context,
                 "chronomind_reminder_channel"
             )
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.drawable.app_logo)
                 .setContentTitle("Daily focus reminder")
                 .setContentText("Tap to start your focus session today")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
