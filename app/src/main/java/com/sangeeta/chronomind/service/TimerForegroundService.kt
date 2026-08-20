@@ -472,12 +472,12 @@ class TimerForegroundService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("ChronoMind Focus Session")
             .setContentText(contentText)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.app_logo)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(openAppIntent)
-            .addAction(R.drawable.ic_launcher_foreground, "Pause", pausePendingIntent)
-            .addAction(R.drawable.ic_launcher_foreground, "Mark Complete", completePendingIntent)
+            .addAction(R.drawable.app_logo, "Pause", pausePendingIntent)
+            .addAction(R.drawable.app_logo, "Mark Complete", completePendingIntent)
     }
 
     private fun buildCompletionNotification(activityName: String): NotificationCompat.Builder {
@@ -493,13 +493,13 @@ class TimerForegroundService : Service() {
         return NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
             .setContentTitle("$activityName complete!")
             .setContentText("Tap Dismiss to stop the alert.")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.app_logo)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setOngoing(false)
             .setAutoCancel(false)
             .setContentIntent(openAppIntent)
-            .addAction(R.drawable.ic_launcher_foreground, "Dismiss", dismissPendingIntent)
+            .addAction(R.drawable.app_logo, "Dismiss", dismissPendingIntent)
     }
 
     private fun updateRunningNotification(timeText: String) {
