@@ -12,6 +12,7 @@ import com.sangeeta.chronomind.ui.navigation.MainNavHost
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.activity.viewModels
 import javax.inject.Inject
+import androidx.core.view.WindowCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 @AndroidEntryPoint
@@ -30,6 +31,13 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
+        WindowCompat.getInsetsController(
+            window,
+            window.decorView
+        ).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
         setContent {
 
 

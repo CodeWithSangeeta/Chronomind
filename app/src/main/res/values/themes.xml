@@ -1,13 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.ChronoMind" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.ChronoMind" parent="android:style/Theme.Material.NoActionBar">
+
+        <!-- ChronoMind dark-only window -->
+        <item name="android:windowBackground">#0D0D0D</item>
+
+        <!-- Dark system bars -->
+        <item name="android:statusBarColor">#0D0D0D</item>
+        <item name="android:navigationBarColor">#0D0D0D</item>
+
+        <!-- White system-bar icons -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- ChronoMind accent -->
+        <item name="android:colorAccent">#FFCC00</item>
+
+    </style>
 
     <style name="Theme.Chronomind.Splash" parent="Theme.SplashScreen">
+
+        <!-- Keep splash background black -->
         <item name="windowSplashScreenBackground">#000000</item>
+
+        <!-- Keep current logo for now -->
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+
+        <!-- No logo animation yet -->
         <item name="windowSplashScreenAnimationDuration">0</item>
+
+        <!-- Move into dark application theme -->
         <item name="postSplashScreenTheme">@style/Theme.ChronoMind</item>
+
     </style>
 
 </resources>

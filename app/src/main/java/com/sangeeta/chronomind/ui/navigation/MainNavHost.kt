@@ -7,9 +7,9 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
@@ -27,69 +27,116 @@ import com.sangeeta.chronomind.ui.home.HomeScreen
 import com.sangeeta.chronomind.ui.insights.InsightsScreen
 import com.sangeeta.chronomind.ui.settings.OpenSourceLicensesScreen
 import com.sangeeta.chronomind.ui.settings.SettingsScreen
+import androidx.core.net.toUri
 
 
-private const val DURATION_ENTER = 260
-private const val DURATION_EXIT = 200
+private const val NAVIGATION_DURATION = 180
 
-private val defaultEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(DURATION_ENTER, easing = FastOutSlowInEasing)) +
-            scaleIn(
-                initialScale = 0.96f,
-                animationSpec = tween(DURATION_ENTER, easing = FastOutSlowInEasing)
-            )
+private val defaultEnter:
+        AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+
+    slideInHorizontally(
+        initialOffsetX = { fullWidth ->
+            fullWidth
+        },
+        animationSpec = tween(
+            durationMillis = NAVIGATION_DURATION,
+            easing = FastOutSlowInEasing
+        )
+    )
 }
 
-private val defaultExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(DURATION_EXIT)) +
-            scaleOut(
-                targetScale = 1.04f,
-                animationSpec = tween(DURATION_EXIT)
-            )
+
+private val defaultExit:
+        AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+
+    ExitTransition.None
+}
+private val defaultPopEnter:
+        AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+
+    slideInHorizontally(
+        initialOffsetX = { fullWidth ->
+            -fullWidth
+        },
+        animationSpec = tween(
+            durationMillis = NAVIGATION_DURATION,
+            easing = FastOutSlowInEasing
+        )
+    )
 }
 
-private val defaultPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(DURATION_ENTER, easing = FastOutSlowInEasing)) +
-            scaleIn(
-                initialScale = 1.04f,
-                animationSpec = tween(DURATION_ENTER, easing = FastOutSlowInEasing)
-            )
+private val defaultPopExit:
+        AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+
+    slideOutHorizontally(
+        targetOffsetX = { fullWidth ->
+            fullWidth
+        },
+        animationSpec = tween(
+            durationMillis = NAVIGATION_DURATION,
+            easing = FastOutSlowInEasing
+        )
+    )
 }
 
-private val defaultPopExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(DURATION_EXIT)) +
-            scaleOut(
-                targetScale = 0.96f,
-                animationSpec = tween(DURATION_EXIT)
-            )
-}
+private val sheetEnter:
+        AnimatedContentTransitionScope<*>.() -> EnterTransition = {
 
-private val sheetEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
     slideInVertically(
-        initialOffsetY = { fullHeight -> fullHeight / 3 },
-        animationSpec = tween(DURATION_ENTER, easing = FastOutSlowInEasing)
-    ) + fadeIn(animationSpec = tween(DURATION_ENTER))
+        initialOffsetY = { fullHeight ->
+            fullHeight / 3
+        },
+        animationSpec = tween(
+            NAVIGATION_DURATION,
+            easing = FastOutSlowInEasing
+        )
+    ) + fadeIn(
+        animationSpec = tween(NAVIGATION_DURATION)
+    )
 }
 
-private val sheetExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
-    fadeOut(animationSpec = tween(DURATION_EXIT))
+
+private val sheetExit:
+        AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+
+    fadeOut(
+        animationSpec = tween(NAVIGATION_DURATION)
+    )
 }
 
-private val sheetPopEnter: AnimatedContentTransitionScope<*>.() -> EnterTransition = {
-    fadeIn(animationSpec = tween(DURATION_ENTER))
+
+private val sheetPopEnter:
+        AnimatedContentTransitionScope<*>.() -> EnterTransition = {
+
+    fadeIn(
+        animationSpec = tween(NAVIGATION_DURATION)
+    )
 }
 
-private val sheetPopExit: AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+
+private val sheetPopExit:
+        AnimatedContentTransitionScope<*>.() -> ExitTransition = {
+
     slideOutVertically(
-        targetOffsetY = { fullHeight -> fullHeight / 3 },
-        animationSpec = tween(DURATION_EXIT, easing = FastOutSlowInEasing)
-    ) + fadeOut(animationSpec = tween(DURATION_EXIT))
+        targetOffsetY = { fullHeight ->
+            fullHeight / 3
+        },
+        animationSpec = tween(
+            NAVIGATION_DURATION,
+            easing = FastOutSlowInEasing
+        )
+    ) + fadeOut(
+        animationSpec = tween(NAVIGATION_DURATION)
+    )
 }
+
 
 @Composable
 fun MainNavHost(
     navController: NavHostController = rememberNavController()
 ) {
+
     NavHost(
         navController = navController,
         startDestination = ChronoRoutes.Home.route,
@@ -99,25 +146,62 @@ fun MainNavHost(
         popExitTransition = defaultPopExit
     ) {
 
-        composable(route = ChronoRoutes.Home.route) {
+        composable(
+            route = ChronoRoutes.Home.route
+        ) {
             HomeScreen(
-                onNavigateToSettings       = { navController.navigate(ChronoRoutes.Settings.route) },
-                onNavigateToAllActivities  = { navController.navigate(ChronoRoutes.AllActivities.route) },
-                onNavigateToCreateActivity = { navController.navigate(ChronoRoutes.CreateEditActivity.createRoute()) },
-                onNavigateToHistory        = { navController.navigate(ChronoRoutes.History.route) },
-                onNavigateToInsights       = { navController.navigate(ChronoRoutes.Insights.route) }
+                onNavigateToSettings = {
+                    navController.navigate(
+                        ChronoRoutes.Settings.route
+                    )
+                },
+
+                onNavigateToAllActivities = {
+                    navController.navigate(
+                        ChronoRoutes.AllActivities.route
+                    )
+                },
+
+                onNavigateToCreateActivity = {
+                    navController.navigate(
+                        ChronoRoutes.CreateEditActivity.createRoute()
+                    )
+                },
+
+                onNavigateToHistory = {
+                    navController.navigate(
+                        ChronoRoutes.History.route
+                    )
+                },
+
+                onNavigateToInsights = {
+                    navController.navigate(
+                        ChronoRoutes.Insights.route
+                    )
+                }
             )
         }
 
-        composable(route = ChronoRoutes.AllActivities.route) {
+        composable(
+            route = ChronoRoutes.AllActivities.route
+        ) {
             AllActivitiesScreen(
-                onBackClick = { navController.popBackStack() },
+                onBackClick = {
+                    navController.popBackStack()
+                },
+
                 onNewActivityClick = {
-                    navController.navigate(ChronoRoutes.CreateEditActivity.createRoute())
+                    navController.navigate(
+                        ChronoRoutes.CreateEditActivity.createRoute()
+                    )
                 },
+
                 onEditActivityClick = { id ->
-                    navController.navigate(ChronoRoutes.CreateEditActivity.createRoute(id))
+                    navController.navigate(
+                        ChronoRoutes.CreateEditActivity.createRoute(id)
+                    )
                 },
+
                 onSelectActivityClick = {
                     navController.popBackStack()
                 }
@@ -126,8 +210,11 @@ fun MainNavHost(
 
         composable(
             route = ChronoRoutes.CreateEditActivity.route,
+
             arguments = listOf(
-                navArgument(ChronoRoutes.CreateEditActivity.ARG) {
+                navArgument(
+                    ChronoRoutes.CreateEditActivity.ARG
+                ) {
                     type = NavType.IntType
                     defaultValue = -1
                 }
@@ -136,87 +223,166 @@ fun MainNavHost(
             exitTransition = sheetExit,
             popEnterTransition = sheetPopEnter,
             popExitTransition = sheetPopExit
+
         ) {
+
             CreateEditActivityScreen(
-                onBackClick = { navController.popBackStack() },
-                onNavigateBack = { navController.popBackStack() },
+                onBackClick = {
+                    navController.popBackStack()
+                },
+
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+
                 onNavigateHomeAfterStart = {
-                    navController.navigate(ChronoRoutes.Home.route) {
-                        popUpTo(ChronoRoutes.Home.route) { inclusive = false }
+
+                    navController.navigate(
+                        ChronoRoutes.Home.route
+                    ) {
+                        popUpTo(
+                            ChronoRoutes.Home.route
+                        ) {
+                            inclusive = false
+                        }
+
                         launchSingleTop = true
                     }
                 }
             )
         }
 
-        composable(route = ChronoRoutes.History.route) {
+        composable(
+            route = ChronoRoutes.History.route
+        ) {
             HistoryScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
 
-        composable(route = ChronoRoutes.Insights.route) {
+        composable(
+            route = ChronoRoutes.Insights.route
+        ) {
             InsightsScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
 
-        composable(route = ChronoRoutes.Settings.route) {
+        composable(
+            route = ChronoRoutes.Settings.route
+        ) {
+
             val context = LocalContext.current
+
             SettingsScreen(
-                onBackClick = { navController.popBackStack() },
+                onBackClick = {
+                    navController.popBackStack()
+                },
+
                 onRowClick = { rowId ->
+
                     when (rowId) {
+
                         "privacy" -> {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                data = android.net.Uri.parse(context.getString(R.string.url_privacy_policy))
-                            }
+                            val intent =
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW
+                                ).apply {
+
+                                    data = context.getString(
+                                        R.string.url_privacy_policy
+                                    ).toUri()
+                                }
+
                             context.startActivity(intent)
                         }
+
 
                         "terms" -> {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                data = android.net.Uri.parse(context.getString(R.string.url_terms_of_service))
-                            }
+                            val intent =
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW
+                                ).apply {
+
+                                    data =
+                                        context.getString(
+                                            R.string.url_terms_of_service
+                                        ).toUri()
+                                }
+
                             context.startActivity(intent)
                         }
+
 
                         "developer" -> {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                data = android.net.Uri.parse(context.getString(R.string.url_developer_portfolio))
-                            }
+                            val intent =
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW
+                                ).apply {
+
+                                    data =
+                                        context.getString(
+                                            R.string.url_developer_portfolio
+                                        ).toUri()
+                                }
+
                             context.startActivity(intent)
                         }
 
+
                         "support_portal" -> {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
-                                data = android.net.Uri.parse(context.getString(R.string.url_support_portal))
-                            }
+                            val intent =
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW
+                                ).apply {
+
+                                    data =
+                                        context.getString(
+                                                R.string.url_support_portal
+                                        ).toUri()
+                                }
+
                             runCatching {
-                                context.startActivity(intent)
+                            context.startActivity(intent)
                             }.onFailure {
-                                android.widget.Toast.makeText(context, "Cannot open web browser.", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Cannot open web browser.",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
 
+
                         "licenses" -> {
-                            navController.navigate(ChronoRoutes.OpenSourceLicenses.route)
+                            navController.navigate(
+                                ChronoRoutes.OpenSourceLicenses.route
+                            )
                         }
-                        else -> { }
+
+
+                        else -> {}
                     }
                 },
+
                 onResetOnboarding = {
                     navController.popBackStack()
                 }
             )
         }
 
-        composable(route = ChronoRoutes.OpenSourceLicenses.route) {
+        composable(
+            route = ChronoRoutes.OpenSourceLicenses.route
+        ) {
             OpenSourceLicensesScreen(
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    navController.popBackStack()
+                }
             )
         }
-
-
     }
 }
