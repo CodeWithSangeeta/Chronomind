@@ -92,14 +92,14 @@ class TimerForegroundService : Service() {
                 if (isTimerEnded) {
 
                     // Safe sequential update block: process data fully BEFORE killing service threads
-                    if (running.completionStyle == "AUTO_CHECK" || running.completionStyle == "TIMER_END") {
-                        activityRepo.completeSession(
-                            running,
-                            finalElapsed = running.targetMinutes * 60L
-                        )
-                    } else {
+//                    if (running.completionStyle == "AUTO_CHECK" || running.completionStyle == "TIMER_END") {
+//                        activityRepo.completeSession(
+//                            running,
+//                            finalElapsed = running.targetMinutes * 60L
+//                        )
+//                    } else {
                         activityRepo.pauseSession(running)
-                    }
+                  //  }
 
                     stopServiceGracefully()
                     break
