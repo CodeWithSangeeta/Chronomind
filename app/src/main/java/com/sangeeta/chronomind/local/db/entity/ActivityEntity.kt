@@ -26,4 +26,5 @@ data class ActivityEntity(
     val sessionEndsAtEpochMillis: Long? = null,
     val accumulatedElapsedBeforeStartSeconds: Long = 0L,
     val completedDate: String = "",
+    val timerFinishedAtEpochMillis: Long? = null,
   )

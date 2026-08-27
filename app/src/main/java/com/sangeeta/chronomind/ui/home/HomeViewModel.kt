@@ -189,6 +189,34 @@ class HomeViewModel @Inject constructor(
         _showFinishDialog.value = false
     }
 
+    fun stopFinishedTimer() {
+        val activity = uiState.value.selectedActivity ?: return
+
+        viewModelScope.launch {
+            val entity = activityRepo
+                .observeById(activity.id)
+                .firstOrNull()
+                ?: return@launch
+
+            activityRepo.abandonToHistory(entity)
+        }
+    }
+
+    fun completeFinishedTimer() {
+        val activity = uiState.value.selectedActivity ?: return
+
+        viewModelScope.launch {
+            val entity = activityRepo
+                .observeById(activity.id)
+                .firstOrNull()
+                ?: return@launch
+
+            activityRepo.completeSession(
+                entity,
+                finalElapsed = entity.targetMinutes * 60L
+            )
+        }
+    }
 
     private fun startTimerService() {
         val intent = TimerForegroundService.startIntent(context)

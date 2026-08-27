@@ -90,16 +90,7 @@ class TimerForegroundService : Service() {
                 val isTimerEnded = isTimer && remaining <= 0L
 
                 if (isTimerEnded) {
-
-                    // Safe sequential update block: process data fully BEFORE killing service threads
-//                    if (running.completionStyle == "AUTO_CHECK" || running.completionStyle == "TIMER_END") {
-//                        activityRepo.completeSession(
-//                            running,
-//                            finalElapsed = running.targetMinutes * 60L
-//                        )
-//                    } else {
-                        activityRepo.pauseSession(running)
-                  //  }
+                    activityRepo.finishTimerWaitingForUser(running)
 
                     stopServiceGracefully()
                     break
