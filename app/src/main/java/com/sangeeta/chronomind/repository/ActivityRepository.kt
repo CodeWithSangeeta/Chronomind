@@ -21,6 +21,9 @@ class ActivityRepository @Inject constructor(
     private val dao: ActivityDao,
     private val sessionDao: SessionDao
 ) {
+    private companion object {
+        const val TIMER_FINISHED_GRACE_SECONDS = 90L
+    }
     private val _selectedActivityId = MutableStateFlow<Int?>(null)
     val selectedActivityId: StateFlow<Int?> = _selectedActivityId.asStateFlow()
 
@@ -92,14 +95,30 @@ class ActivityRepository @Inject constructor(
         selectActivity(activity.id)
     }
 
+//    suspend fun finishTimerWaitingForUser(activity: ActivityEntity) {
+//        val today = getTodayDateString()
+//        val targetSeconds = activity.targetMinutes * 60L
+//
+//        dao.pauseSession(
+//            id = activity.id,
+//            elapsedSeconds = targetSeconds,
+//            pendingDate = today
+//        )
+//
+//        selectActivity(activity.id)
+//    }
+
+
     suspend fun finishTimerWaitingForUser(activity: ActivityEntity) {
         val today = getTodayDateString()
         val targetSeconds = activity.targetMinutes * 60L
+        val finishedAt = nowMillis()
 
-        dao.pauseSession(
+        dao.markTimerFinished(
             id = activity.id,
-            elapsedSeconds = targetSeconds,
-            pendingDate = today
+            targetSeconds = targetSeconds,
+            pendingDate = today,
+            finishedAt = finishedAt
         )
 
         selectActivity(activity.id)
@@ -205,6 +224,16 @@ class ActivityRepository @Inject constructor(
         return ((endsAt - now) / 1000L).coerceAtLeast(0L)
     }
 
+    fun computeFinishedOvertimeSeconds(
+        activity: ActivityEntity,
+        now: Long = nowMillis()
+    ): Long {
+        val finishedAt = activity.timerFinishedAtEpochMillis ?: return 0L
+
+        return ((now - finishedAt) / 1000L)
+            .coerceIn(0L, TIMER_FINISHED_GRACE_SECONDS)
+    }
+
     private fun computeEndsAt(activity: ActivityEntity, now: Long, accumulated: Long): Long? {
         return if (activity.targetType == "STOPWATCH") {
             null
@@ -221,20 +250,42 @@ class ActivityRepository @Inject constructor(
 
         val elapsed = computeElapsedSeconds(activity, now)
         val remaining = computeRemainingSeconds(activity, now)
-
         val sessionState = when {
             isCompletedToday -> ActivitySessionState.COMPLETED_TODAY
-            activity.isRunning -> ActivitySessionState.RUNNING
-            activity.hasPendingSession && activity.pendingSessionDate == today -> ActivitySessionState.PENDING
-            else -> ActivitySessionState.IDLE
+
+            activity.targetType == "TIMER" &&
+                    activity.timerFinishedAtEpochMillis != null ->
+                ActivitySessionState.FINISHED_WAITING_FOR_USER
+
+            activity.isRunning ->
+                ActivitySessionState.RUNNING
+
+            activity.hasPendingSession &&
+                    activity.pendingSessionDate == today ->
+                ActivitySessionState.PENDING
+
+            else ->
+                ActivitySessionState.IDLE
         }
 
         val displayTime = when {
-            isCompletedToday -> formatTime(elapsed)
-            activity.targetType == "STOPWATCH" -> formatTime(elapsed)
-            activity.isRunning -> formatTime(remaining)
-            sessionState == ActivitySessionState.PENDING -> formatTime(remaining)
-            else -> formatTime(activity.targetMinutes * 60L)
+            isCompletedToday ->
+                formatTime(elapsed)
+
+            activity.targetType == "STOPWATCH" ->
+                formatTime(elapsed)
+
+            sessionState == ActivitySessionState.FINISHED_WAITING_FOR_USER ->
+                "00:00"
+
+            activity.isRunning ->
+                formatTime(remaining)
+
+            sessionState == ActivitySessionState.PENDING ->
+                formatTime(remaining)
+
+            else ->
+                formatTime(activity.targetMinutes * 60L)
         }
 
         val progress = if (activity.targetType == "STOPWATCH" || activity.targetMinutes == 0) 0f

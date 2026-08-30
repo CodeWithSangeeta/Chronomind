@@ -14,6 +14,7 @@ import com.sangeeta.chronomind.util.NotificationPermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -51,17 +53,26 @@ class HomeViewModel @Inject constructor(
     private val _activeTimerCardActivityId = MutableStateFlow<Int?>(null)
     val activeTimerCardActivityId: StateFlow<Int?> = _activeTimerCardActivityId.asStateFlow()
 
+    private val clockTicker = flow {
+        while (true) {
+            emit(System.currentTimeMillis())
+            delay(1_000)
+        }
+    }
     val heroDisplayState: StateFlow<ActivityDisplayState?> =
         combine(
             activityRepo.observeAll(),
-            activityRepo.selectedActivityId
-        ) { activities, selectedId ->
-            val now = System.currentTimeMillis()
-            val running  = activities.firstOrNull { it.isRunning }
+            activityRepo.selectedActivityId,
+            clockTicker
+        ) { activities, selectedId, now ->
+            val running = activities.firstOrNull { it.isRunning }
             val selected = activities.firstOrNull { it.id == selectedId }
             val fallback = activities.firstOrNull()
             val hero = running ?: selected ?: fallback
-            hero?.let { activityRepo.buildDisplayState(it, now) }
+
+            hero?.let {
+                activityRepo.buildDisplayState(it, now)
+            }
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

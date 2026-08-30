@@ -249,6 +249,7 @@ private fun HomeScreenContent(
                                 ActivitySessionState.RUNNING -> onPause()
                                 ActivitySessionState.PENDING,
                                 ActivitySessionState.IDLE -> onStartActivityDirectly(activity.id)
+                                ActivitySessionState.FINISHED_WAITING_FOR_USER,
                                 ActivitySessionState.COMPLETED_TODAY -> Unit
                             }
                         }

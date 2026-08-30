@@ -2,7 +2,7 @@ package com.sangeeta.chronomind.ui.model
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
-enum class ActivitySessionState { IDLE, RUNNING, PENDING, COMPLETED_TODAY }
+enum class ActivitySessionState { IDLE, RUNNING, PENDING, COMPLETED_TODAY ,FINISHED_WAITING_FOR_USER}
 
 data class ActivityDisplayState(
     val activityId: Int,

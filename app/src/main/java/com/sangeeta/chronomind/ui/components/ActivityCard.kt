@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +60,7 @@ fun ActivityCard(
         ActivitySessionState.PENDING -> Icons.Rounded.PlayArrow
         ActivitySessionState.COMPLETED_TODAY -> Icons.Rounded.CheckCircle
         ActivitySessionState.IDLE -> Icons.Rounded.PlayArrow
+        ActivitySessionState.FINISHED_WAITING_FOR_USER -> Icons.Rounded.Timer
     }
 
     val actionTint = when (activity.sessionState) {
@@ -67,7 +69,8 @@ fun ActivityCard(
     }
 
 
-    val actionEnabled = activity.sessionState != ActivitySessionState.COMPLETED_TODAY
+    val actionEnabled = activity.sessionState != ActivitySessionState.COMPLETED_TODAY &&
+            activity.sessionState != ActivitySessionState.FINISHED_WAITING_FOR_USER
 
     val completionBadgeLabel = when (activity.sessionState) {
         ActivitySessionState.COMPLETED_TODAY -> "Done today"
@@ -77,6 +80,7 @@ fun ActivityCard(
     val supportText = when (activity.sessionState) {
         ActivitySessionState.RUNNING -> null
         ActivitySessionState.PENDING -> "Last attempt: Today"
+        ActivitySessionState.FINISHED_WAITING_FOR_USER -> "Timer finished"
         ActivitySessionState.COMPLETED_TODAY -> null
         ActivitySessionState.IDLE -> "Last attempt: ${activity.lastActiveDate}"
     }

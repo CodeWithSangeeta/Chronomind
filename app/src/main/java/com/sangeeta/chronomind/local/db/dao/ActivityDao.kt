@@ -116,6 +116,25 @@ interface ActivityDao {
 
     @Query("""
     UPDATE activities
+    SET elapsedSeconds = :targetSeconds,
+        isRunning = 0,
+        sessionStartedAtEpochMillis = NULL,
+        sessionEndsAtEpochMillis = NULL,
+        accumulatedElapsedBeforeStartSeconds = :targetSeconds,
+        hasPendingSession = 1,
+        pendingSessionDate = :pendingDate,
+        timerFinishedAtEpochMillis = :finishedAt
+    WHERE id = :id
+""")
+    suspend fun markTimerFinished(
+        id: Int,
+        targetSeconds: Long,
+        pendingDate: String,
+        finishedAt: Long
+    )
+
+    @Query("""
+    UPDATE activities
     SET elapsedSeconds = :elapsedSeconds,
         isRunning = :running
     WHERE id = :id

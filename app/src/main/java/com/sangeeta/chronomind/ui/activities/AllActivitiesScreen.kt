@@ -178,6 +178,7 @@ private fun AllActivitiesScreenContent(
                                             onStartActivityClick(activity.id)
                                         }
                                     }
+                                    ActivitySessionState.FINISHED_WAITING_FOR_USER,
                                     ActivitySessionState.COMPLETED_TODAY -> Unit
                                 }
                             }
