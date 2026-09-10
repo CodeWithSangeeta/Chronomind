@@ -46,8 +46,10 @@ import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -84,6 +86,35 @@ class MainViewModel @Inject constructor(
             started = SharingStarted.Eagerly,
             initialValue = null
         )
+
+    fun stopFinishedTimer() {
+        val activity = finishedTimerActivity.value ?: return
+
+        viewModelScope.launch {
+            val entity = activityRepository
+                .observeById(activity.id)
+                .firstOrNull()
+                ?: return@launch
+
+            activityRepository.abandonToHistory(entity)
+        }
+    }
+
+    fun completeFinishedTimer() {
+        val activity = finishedTimerActivity.value ?: return
+
+        viewModelScope.launch {
+            val entity = activityRepository
+                .observeById(activity.id)
+                .firstOrNull()
+                ?: return@launch
+
+            activityRepository.completeSession(
+                entity,
+                finalElapsed = entity.targetMinutes * 60L
+            )
+        }
+    }
 }
 
 data class MainUiState(

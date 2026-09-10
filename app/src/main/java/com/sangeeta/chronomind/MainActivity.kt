@@ -11,9 +11,13 @@ import com.sangeeta.chronomind.repository.OnboardingRepository
 import com.sangeeta.chronomind.ui.navigation.MainNavHost
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.activity.viewModels
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import javax.inject.Inject
 import androidx.core.view.WindowCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.sangeeta.chronomind.ui.components.TimerFinishedDialog
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -39,15 +43,38 @@ class MainActivity : ComponentActivity() {
             isAppearanceLightNavigationBars = false
         }
         setContent {
-
-
             val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+            val finishedTimerActivity by viewModel.finishedTimerActivity
+                .collectAsStateWithLifecycle()
+
+            var dismissFinishedTimerDialog by remember {
+                mutableStateOf(false)
+            }
+
+            androidx.compose.runtime.LaunchedEffect(finishedTimerActivity?.id) {
+                if (finishedTimerActivity != null) {
+                    dismissFinishedTimerDialog = false
+                }
+            }
 
             if (state.isOnboardingComplete) {
                 MainNavHost()
             } else {
                 OnboardingNavHost(
                     onNavigateToMain = {}
+                )
+            }
+            if (finishedTimerActivity != null && !dismissFinishedTimerDialog) {
+                TimerFinishedDialog(
+                    onStop = {
+                        dismissFinishedTimerDialog = true
+                        viewModel.stopFinishedTimer()
+                    },
+                    onComplete = {
+                        dismissFinishedTimerDialog = true
+                        viewModel.completeFinishedTimer()
+                    }
                 )
             }
         }

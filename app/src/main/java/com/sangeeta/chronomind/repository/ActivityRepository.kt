@@ -95,20 +95,6 @@ class ActivityRepository @Inject constructor(
         selectActivity(activity.id)
     }
 
-//    suspend fun finishTimerWaitingForUser(activity: ActivityEntity) {
-//        val today = getTodayDateString()
-//        val targetSeconds = activity.targetMinutes * 60L
-//
-//        dao.pauseSession(
-//            id = activity.id,
-//            elapsedSeconds = targetSeconds,
-//            pendingDate = today
-//        )
-//
-//        selectActivity(activity.id)
-//    }
-
-
     suspend fun finishTimerWaitingForUser(activity: ActivityEntity) {
         val today = getTodayDateString()
         val targetSeconds = activity.targetMinutes * 60L

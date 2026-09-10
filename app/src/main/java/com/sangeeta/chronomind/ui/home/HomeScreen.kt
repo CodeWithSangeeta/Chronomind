@@ -66,11 +66,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val heroDisplayState by viewModel.heroDisplayState.collectAsStateWithLifecycle()
-    val isTimerFinished =  heroDisplayState?.isStopwatch == false &&
-                heroDisplayState?.sessionState == ActivitySessionState.PENDING &&
-                (heroDisplayState?.targetSeconds ?: 0L) > 0L &&
-                (heroDisplayState?.elapsedSeconds ?: 0L) >=
-                (heroDisplayState?.targetSeconds ?: 0L)
+
 
     val showFinishDialog by viewModel.showFinishDialog.collectAsStateWithLifecycle()
 
@@ -123,7 +119,6 @@ fun HomeScreen(
         uiState = uiState,
         heroDisplayState = heroDisplayState,
         showFinishDialog = showFinishDialog,
-        isTimerFinished = isTimerFinished,
         onNavigateToSettings = onNavigateToSettings,
         onNavigateToAllActivities = onNavigateToAllActivities,
         onQuickActionClick = { action ->
@@ -139,12 +134,8 @@ fun HomeScreen(
         onConfirmFinish = viewModel::confirmFinish,
         onCancelFinish = viewModel::cancelFinish,
 
-        onStopFinishedTimer = viewModel::stopFinishedTimer,
-        onCompleteFinishedTimer = viewModel::completeFinishedTimer,
-
         onRecentActivityClick = viewModel::onRecentActivitySelected,
         onStartActivityDirectly = viewModel::startActivityDirectly,
-
         listState = listState,
         timerPulseTrigger = timerPulseTrigger
     )
@@ -155,7 +146,6 @@ private fun HomeScreenContent(
     uiState: HomeUiState,
     heroDisplayState: ActivityDisplayState?,
     showFinishDialog: Boolean,
-    isTimerFinished: Boolean,
     onNavigateToSettings: () -> Unit,
     onNavigateToAllActivities: () -> Unit,
     onQuickActionClick: (HomeQuickAction) -> Unit,
@@ -164,8 +154,6 @@ private fun HomeScreenContent(
     onFinish: () -> Unit,
     onConfirmFinish: () -> Unit,
     onCancelFinish: () -> Unit,
-    onStopFinishedTimer: () -> Unit,
-    onCompleteFinishedTimer: () -> Unit,
     onRecentActivityClick: (Int) -> Unit,
     onStartActivityDirectly: (Int) -> Unit,
     listState: LazyListState,
@@ -211,12 +199,6 @@ private fun HomeScreenContent(
                             )
                         }
 
-                        if (isTimerFinished) {
-                            TimerFinishedDialog(
-                                onStop = onStopFinishedTimer,
-                                onComplete = onCompleteFinishedTimer
-                            )
-                        }
                     }
                 }
             }
@@ -311,181 +293,6 @@ private fun HomeHeader(
     }
 }
 
-
-@Composable
-internal fun TimerFinishedDialog(
-    onStop: () -> Unit,
-    onComplete: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = {
-            // Intentionally empty.
-            // The user must choose Stop or Mark Complete.
-        }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 360.dp)
-                .shadow(
-                    elevation = 30.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    ambientColor = Gold.copy(alpha = 0.14f),
-                    spotColor = Color.Black
-                )
-                .clip(RoundedCornerShape(28.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color(0xFF161616),
-                            Color(0xFF0B0B0B)
-                        )
-                    )
-                )
-                .border(
-                    1.dp,
-                    Brush.linearGradient(
-                        listOf(
-                            Gold.copy(alpha = 0.34f),
-                            Color.White.copy(alpha = 0.10f)
-                        )
-                    ),
-                    RoundedCornerShape(28.dp)
-                )
-                .padding(22.dp)
-        ) {
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-
-                /*
-                 * Timer finished indicator
-                 */
-                Box(
-                    modifier = Modifier
-                        .size(58.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    Gold.copy(alpha = 0.24f),
-                                    Color(0xFF181818)
-                                )
-                            )
-                        )
-                        .border(
-                            1.dp,
-                            Gold.copy(alpha = 0.32f),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "0",
-                        color = Gold,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Text(
-                    text = "Timer finished",
-                    color = TextPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-
-                Text(
-                    text = "Your timer has reached zero. What would you like to do?",
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-
-                    /*
-                     * STOP
-                     *
-                     * Saves the session as incomplete and
-                     * resets the activity.
-                     */
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF1B1B1B))
-                            .border(
-                                1.dp,
-                                BorderSoft,
-                                RoundedCornerShape(16.dp)
-                            )
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember {
-                                    MutableInteractionSource()
-                                }
-                            ) {
-                                onStop()
-                            }
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Stop",
-                            color = TextSecondary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    /*
-                     * MARK COMPLETE
-                     *
-                     * Records a completed session and updates
-                     * today's completion/streak.
-                     */
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        GoldSoft,
-                                        GoldDim
-                                    )
-                                )
-                            )
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember {
-                                    MutableInteractionSource()
-                                }
-                            ) {
-                                onComplete()
-                            }
-                            .padding(vertical = 12.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Mark Complete",
-                            color = Color(0xFF1A1200),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 
 
