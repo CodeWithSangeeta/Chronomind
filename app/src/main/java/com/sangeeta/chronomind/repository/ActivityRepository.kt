@@ -15,11 +15,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import com.sangeeta.chronomind.timer.TimerFinishedReceiver
+import dagger.hilt.android.qualifiers.ApplicationContext
+
 
 @Singleton
 class ActivityRepository @Inject constructor(
     private val dao: ActivityDao,
-    private val sessionDao: SessionDao
+    private val sessionDao: SessionDao,
+    @ApplicationContext private val context: Context
 ) {
     private companion object {
         const val TIMER_FINISHED_GRACE_SECONDS = 90L
@@ -104,6 +112,11 @@ class ActivityRepository @Inject constructor(
             id = activity.id,
             targetSeconds = targetSeconds,
             pendingDate = today,
+            finishedAt = finishedAt
+        )
+
+        scheduleFinishedTimerCleanup(
+            activityId = activity.id,
             finishedAt = finishedAt
         )
 
@@ -307,5 +320,28 @@ class ActivityRepository @Inject constructor(
         val today = getTodayDateString()
         val stalePending = dao.getStalePendingSessions(today)
         stalePending.forEach { abandonToHistory(it) }
+    }
+
+
+    fun scheduleFinishedTimerCleanup(activityId: Int, finishedAt: Long) {
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+            ?: return
+
+        val intent = Intent(context, TimerFinishedReceiver::class.java).apply {
+            putExtra(TimerFinishedReceiver.EXTRA_ACTIVITY_ID, activityId)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            activityId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            finishedAt + TIMER_FINISHED_GRACE_SECONDS * 1000L,
+            pendingIntent
+        )
     }
 }

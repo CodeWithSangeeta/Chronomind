@@ -1,45 +1,8 @@
-//package com.sangeeta.chronomind
-//
-//import androidx.lifecycle.ViewModel
-//import androidx.lifecycle.viewModelScope
-//import com.sangeeta.chronomind.repository.OnboardingRepository
-//import dagger.hilt.android.lifecycle.HiltViewModel
-//import kotlinx.coroutines.flow.SharingStarted
-//import kotlinx.coroutines.flow.map
-//import kotlinx.coroutines.flow.stateIn
-//import javax.inject.Inject
-//
-//@HiltViewModel
-//class MainViewModel @Inject constructor(
-//    private val onboardingRepository: OnboardingRepository
-//) : ViewModel() {
-//
-//    val uiState = onboardingRepository.isOnboardingComplete
-//        .map { completed ->
-//            MainUiState(
-//                isLoading = false,
-//                isOnboardingComplete = completed
-//            )
-//        }
-//        .stateIn(
-//            scope = viewModelScope,
-//            started = SharingStarted.Eagerly,
-//            initialValue = MainUiState(isLoading = true)
-//        )
-//}
-//
-//
-//
-//data class MainUiState(
-//    val isLoading: Boolean = true,
-//    val isOnboardingComplete: Boolean = false
-//)
-
-
 package com.sangeeta.chronomind
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sangeeta.chronomind.local.db.entity.ActivityEntity
 import com.sangeeta.chronomind.repository.ActivityRepository
 import com.sangeeta.chronomind.repository.OnboardingRepository
 import com.sangeeta.chronomind.ui.model.ActivitySessionState
@@ -114,6 +77,10 @@ class MainViewModel @Inject constructor(
                 finalElapsed = entity.targetMinutes * 60L
             )
         }
+    }
+
+    fun getFinishedOvertimeSeconds(activity: ActivityEntity): Long {
+        return activityRepository.computeFinishedOvertimeSeconds(activity)
     }
 }
 

@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.media.MediaPlayer
+import android.media.RingtoneManager
+
 
 @AndroidEntryPoint
 class TimerForegroundService : Service() {
@@ -32,15 +35,17 @@ class TimerForegroundService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var tickJob: Job? = null
-
+    private var finishedSoundPlayer: MediaPlayer? = null
+    private var finishedGraceJob: Job? = null
     companion object {
         const val ACTION_START = "ACTION_TIMER_START"
         const val ACTION_PAUSE = "ACTION_TIMER_PAUSE"
         const val ACTION_STOP = "ACTION_TIMER_STOP"
         const val ACTION_COMPLETE = "ACTION_TIMER_COMPLETE"
-
+        const val ACTION_STOP_FINISHED_SOUND = "ACTION_STOP_FINISHED_SOUND"
         const val CHANNEL_ID = "chronomind_timer_channel"
         const val NOTIF_ID = 1001
+
 
         fun startIntent(ctx: Context) = Intent(ctx, TimerForegroundService::class.java).apply { action = ACTION_START }
         fun pauseIntent(ctx: Context) = Intent(ctx, TimerForegroundService::class.java).apply { action = ACTION_PAUSE }
@@ -59,6 +64,10 @@ class TimerForegroundService : Service() {
             ACTION_PAUSE -> pauseTicking()
             ACTION_STOP -> pauseTicking()
             ACTION_COMPLETE -> completeFromNotification()
+
+            ACTION_STOP_FINISHED_SOUND -> {
+                stopFinishedSound()
+            }
             else -> startTicking()
         }
         return START_STICKY
@@ -92,7 +101,22 @@ class TimerForegroundService : Service() {
                 if (isTimerEnded) {
                     activityRepo.finishTimerWaitingForUser(running)
 
-                    stopServiceGracefully()
+                    startFinishedSound()
+
+                    finishedGraceJob?.cancel()
+                    finishedGraceJob = serviceScope.launch {
+                        delay(90_000L)
+
+                        stopFinishedSound()
+
+                        val finished = activityRepo.observeById(running.id).firstOrNull()
+                        if (finished?.timerFinishedAtEpochMillis != null) {
+                            activityRepo.abandonToHistory(finished)
+                        }
+
+                        stopServiceGracefully()
+                    }
+
                     break
                 }
 
@@ -170,8 +194,34 @@ class TimerForegroundService : Service() {
         getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
     }
 
+    private fun startFinishedSound() {
+        if (finishedSoundPlayer?.isPlaying == true) return
+
+        val soundUri = RingtoneManager.getDefaultUri(
+            RingtoneManager.TYPE_ALARM
+        )
+
+        finishedSoundPlayer = MediaPlayer.create(this, soundUri)?.apply {
+            isLooping = true
+            start()
+        }
+    }
+
+    private fun stopFinishedSound() {
+        finishedSoundPlayer?.let { player ->
+            if (player.isPlaying) {
+                player.stop()
+            }
+            player.release()
+        }
+
+        finishedSoundPlayer = null
+    }
+
     override fun onDestroy() {
         tickJob?.cancel()
+        finishedGraceJob?.cancel()
+        stopFinishedSound()
         serviceScope.cancel()
         super.onDestroy()
     }

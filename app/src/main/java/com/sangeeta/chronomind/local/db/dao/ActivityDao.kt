@@ -52,7 +52,8 @@ interface ActivityDao {
         pendingSessionDate = '',
         sessionStartedAtEpochMillis = NULL,
         sessionEndsAtEpochMillis = NULL,
-        accumulatedElapsedBeforeStartSeconds = 0
+        accumulatedElapsedBeforeStartSeconds = 0,
+        timerFinishedAtEpochMillis = NULL
     WHERE id = :id
 """)
     suspend fun resetSession(id: Int)
@@ -87,7 +88,8 @@ interface ActivityDao {
         sessionEndsAtEpochMillis = :endsAt,
         accumulatedElapsedBeforeStartSeconds = :accumulatedElapsed,
         hasPendingSession = 0,
-        pendingSessionDate = ''
+        pendingSessionDate = '',
+         timerFinishedAtEpochMillis = NULL
     WHERE id = :id
 """)
     suspend fun startSession(

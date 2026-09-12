@@ -1,6 +1,7 @@
 package com.sangeeta.chronomind
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +19,12 @@ import javax.inject.Inject
 import androidx.core.view.WindowCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.sangeeta.chronomind.ui.components.TimerFinishedDialog
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
+import kotlinx.coroutines.delay
+import android.content.Intent
+import com.sangeeta.chronomind.service.TimerForegroundService
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -52,6 +59,41 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(false)
             }
 
+
+            var finishedOvertimeSeconds by remember {
+                mutableLongStateOf(0L)
+            }
+
+            LaunchedEffect(finishedTimerActivity?.id) {
+                if (finishedTimerActivity != null) {
+                    while (true) {
+                        finishedOvertimeSeconds =
+                            viewModel.getFinishedOvertimeSeconds(finishedTimerActivity!!)
+                        Log.d(
+                            "FinishedTimer",
+                            "Overtime = $finishedOvertimeSeconds"
+                        )
+                        if (finishedOvertimeSeconds >= 90L) {
+                            dismissFinishedTimerDialog = true
+
+                            startService(
+                                Intent(
+                                    this@MainActivity,
+                                    TimerForegroundService::class.java
+                                ).apply {
+                                    action = TimerForegroundService.ACTION_STOP_FINISHED_SOUND
+                                }
+                            )
+
+                            break
+                        }
+                        delay(1000L)
+                    }
+                } else {
+                    finishedOvertimeSeconds = 0L
+                }
+            }
+
             androidx.compose.runtime.LaunchedEffect(finishedTimerActivity?.id) {
                 if (finishedTimerActivity != null) {
                     dismissFinishedTimerDialog = false
@@ -67,12 +109,31 @@ class MainActivity : ComponentActivity() {
             }
             if (finishedTimerActivity != null && !dismissFinishedTimerDialog) {
                 TimerFinishedDialog(
+                    overtimeSeconds = finishedOvertimeSeconds,
                     onStop = {
                         dismissFinishedTimerDialog = true
+                        startService(
+                            Intent(
+                                this@MainActivity,
+                                TimerForegroundService::class.java
+                            ).apply {
+                                action = TimerForegroundService.ACTION_STOP_FINISHED_SOUND
+                            }
+                        )
                         viewModel.stopFinishedTimer()
                     },
                     onComplete = {
                         dismissFinishedTimerDialog = true
+
+                        startService(
+                            Intent(
+                                this@MainActivity,
+                                TimerForegroundService::class.java
+                            ).apply {
+                                action = TimerForegroundService.ACTION_STOP_FINISHED_SOUND
+                            }
+                        )
+
                         viewModel.completeFinishedTimer()
                     }
                 )

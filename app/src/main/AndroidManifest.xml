@@ -54,6 +54,10 @@
                 tools:node="remove" />
         </provider>
 
+        <receiver
+            android:name=".timer.TimerFinishedReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

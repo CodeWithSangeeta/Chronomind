@@ -33,16 +33,17 @@ import com.sangeeta.chronomind.ui.home.GoldDim
 import com.sangeeta.chronomind.ui.home.GoldSoft
 import com.sangeeta.chronomind.ui.home.TextPrimary
 import com.sangeeta.chronomind.ui.home.TextSecondary
-
+import kotlinx.coroutines.delay
 @Composable
 internal fun TimerFinishedDialog(
+    overtimeSeconds: Long,
     onStop: () -> Unit,
     onComplete: () -> Unit
 ) {
+
     Dialog(
         onDismissRequest = {
-            // Intentionally empty.
-            // The user must choose Stop or Mark Complete.
+
         }
     ) {
         Box(
@@ -83,13 +84,10 @@ internal fun TimerFinishedDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
-                /*
-                 * Timer finished indicator
-                 */
                 Box(
                     modifier = Modifier
-                        .size(58.dp)
                         .clip(CircleShape)
+                        .padding(12.dp)
                         .background(
                             Brush.radialGradient(
                                 listOf(
@@ -106,7 +104,7 @@ internal fun TimerFinishedDialog(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "0",
+                        text = " - ${String.format("%02d:%02d", overtimeSeconds / 60, overtimeSeconds % 60)} ",
                         color = Gold,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
@@ -132,12 +130,7 @@ internal fun TimerFinishedDialog(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
 
-                    /*
-                     * STOP
-                     *
-                     * Saves the session as incomplete and
-                     * resets the activity.
-                     */
+
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -167,12 +160,7 @@ internal fun TimerFinishedDialog(
                         )
                     }
 
-                    /*
-                     * MARK COMPLETE
-                     *
-                     * Records a completed session and updates
-                     * today's completion/streak.
-                     */
+
                     Box(
                         modifier = Modifier
                             .weight(1f)
