@@ -9,6 +9,7 @@ import com.sangeeta.chronomind.repository.OnboardingRepository
 import com.sangeeta.chronomind.service.TimerForegroundService
 import com.sangeeta.chronomind.ui.mapper.toUiModel
 import com.sangeeta.chronomind.ui.model.ActivityDisplayState
+import com.sangeeta.chronomind.ui.model.ActivitySessionState
 import com.sangeeta.chronomind.ui.model.ActivityUiModel
 import com.sangeeta.chronomind.util.NotificationPermissionHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -186,11 +187,25 @@ class HomeViewModel @Inject constructor(
         _showFinishDialog.value = true
     }
 
+
     fun confirmFinish() {
         _showFinishDialog.value = false
-        val running = uiState.value.runningActivity ?: return
+
+        val activity = uiState.value.selectedActivity ?: return
+
+        if (
+            activity.sessionState != ActivitySessionState.RUNNING &&
+            activity.sessionState != ActivitySessionState.PENDING
+        ) {
+            return
+        }
+
         viewModelScope.launch {
-            val entity = activityRepo.observeById(running.id).firstOrNull() ?: return@launch
+            val entity = activityRepo
+                .observeById(activity.id)
+                .firstOrNull()
+                ?: return@launch
+
             activityRepo.completeSession(entity)
             context.startService(TimerForegroundService.stopIntent(context))
         }
@@ -200,34 +215,6 @@ class HomeViewModel @Inject constructor(
         _showFinishDialog.value = false
     }
 
-//    fun stopFinishedTimer() {
-//        val activity = uiState.value.selectedActivity ?: return
-//
-//        viewModelScope.launch {
-//            val entity = activityRepo
-//                .observeById(activity.id)
-//                .firstOrNull()
-//                ?: return@launch
-//
-//            activityRepo.abandonToHistory(entity)
-//        }
-//    }
-
-//    fun completeFinishedTimer() {
-//        val activity = uiState.value.selectedActivity ?: return
-//
-//        viewModelScope.launch {
-//            val entity = activityRepo
-//                .observeById(activity.id)
-//                .firstOrNull()
-//                ?: return@launch
-//
-//            activityRepo.completeSession(
-//                entity,
-//                finalElapsed = entity.targetMinutes * 60L
-//            )
-//        }
-//    }
 
     private fun startTimerService() {
         val intent = TimerForegroundService.startIntent(context)

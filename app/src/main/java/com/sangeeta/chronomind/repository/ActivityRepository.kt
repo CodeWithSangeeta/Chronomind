@@ -150,7 +150,24 @@ class ActivityRepository @Inject constructor(
         )
 
         val isFirstCompletionToday = activity.lastActiveDate != today
-        val newStreak = if (isFirstCompletionToday) activity.streakDays + 1 else activity.streakDays
+        val yesterday = getYesterdayDateString()
+
+        val newStreak = when {
+            // Already completed today → don't increase twice
+            !isFirstCompletionToday -> activity.streakDays
+
+            // Continue streak → missed days do not break the streak
+            activity.continueStreakOnMiss -> activity.streakDays + 1
+
+            // First-ever completion
+            activity.lastActiveDate.isBlank() -> 1
+
+            // Reset-to-zero + completed on consecutive day
+            activity.lastActiveDate == yesterday -> activity.streakDays + 1
+
+            // Reset-to-zero + one or more days were missed
+            else -> 1
+        }
         dao.updateStreak(activity.id, newStreak, today)
 
         dao.resetSession(activity.id)
